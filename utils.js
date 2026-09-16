@@ -7,7 +7,7 @@ const MESES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho",
 const MESES_ABR_PT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const DIAS_ABR_PT = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 
-const DESPESA_CATS = {
+const DEFAULT_DESPESA_CATS = {
   "Moradia": ["Aluguel","Condomínio","Energia","Água","Gás","Internet","Telefone","Manutenção"],
   "Alimentação": ["Mercado","Restaurante","Delivery","Lanches","Padaria","Outros"],
   "Transporte": ["Combustível","Uber","99","Transporte público","Estacionamento","Pedágio","Manutenção","Seguro"],
@@ -17,7 +17,7 @@ const DESPESA_CATS = {
   "Financeiro": ["Empréstimo","Juros","Tarifas","Anuidade","Investimentos","Poupança"],
   "Pessoal": ["Roupas","Calçados","Beleza","Presentes","Outros"],
 };
-const RECEITA_CATS = ["Salário","Renda extra","Freelance","Reembolso","Rendimentos","Outros"];
+const DEFAULT_RECEITA_CATS = ["Salário","Renda extra","Freelance","Reembolso","Rendimentos","Outros"];
 const CATEGORY_COLORS = {
   "Moradia":"#3E63DD","Alimentação":"#0FA678","Transporte":"#B8892B","Saúde":"#E1543F",
   "Lazer":"#8B5CF6","Educação":"#0EA5B7","Financeiro":"#64748B","Pessoal":"#DB2777",
@@ -54,6 +54,11 @@ function fmtDateLong(s){ const d = parseDate(s); if(!d) return ""; return `${d.g
 function monthNameOf(dateStr){ const d = parseDate(dateStr); return d? MESES_PT[d.getMonth()] : ""; }
 function monthIndexOf(dateStr){ const d = parseDate(dateStr); return d? d.getMonth() : -1; }
 function yearOf(dateStr){ const d = parseDate(dateStr); return d? d.getFullYear() : null; }
+function addDays(dateStr, n){
+  const d = parseDate(dateStr);
+  const nd = new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+  return nd.toISOString().slice(0,10);
+}
 function addMonths(dateStr, n){
   const d = parseDate(dateStr);
   const nd = new Date(d.getFullYear(), d.getMonth()+n, Math.min(d.getDate(),28));

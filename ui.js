@@ -50,6 +50,28 @@ const UI = {
     document.getElementById("okConfirm").onclick = ()=>{ this.closeModal(); onConfirm(); };
   },
 
+  // Small single-field text prompt, used by the category manager (rename/create).
+  promptText(title, label, defaultValue, onConfirm){
+    this.openModal(`
+      <div class="modal-head"><h3>${escapeHtml(title)}</h3><button class="icon-btn" id="closeP"><i data-lucide="x"></i></button></div>
+      <div class="modal-body">
+        <div class="field"><label>${escapeHtml(label)}</label><input id="p_val" value="${escapeHtml(defaultValue||"")}"/></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary btn-block" id="cancelP">Cancelar</button>
+        <button class="btn btn-primary btn-block" id="okP">Salvar</button>
+      </div>
+    `, { size:"sm", onMount(root){
+      const input = root.querySelector("#p_val");
+      input.focus(); input.select();
+      const submit = ()=>{ UI.closeModal(); onConfirm(input.value.trim()); };
+      root.querySelector("#closeP").onclick = ()=>UI.closeModal();
+      root.querySelector("#cancelP").onclick = ()=>UI.closeModal();
+      root.querySelector("#okP").onclick = submit;
+      input.addEventListener("keydown", (e)=>{ if(e.key==="Enter") submit(); });
+    }});
+  },
+
   // ------------------------------------------------------- theme toggle
   applyTheme(theme){
     document.documentElement.setAttribute("data-theme", theme);
@@ -63,18 +85,19 @@ const UI = {
   },
 
   // ================================================= TRANSACTION MODAL
-  openTransactionModal(existing=null){
+  openTransactionModal(existing=null, opts={}){
     const S = Store.state;
-    const isEdit = !!existing;
-    const t = existing || {
+    const isEdit = !!(existing && existing.id);
+    const draft = opts.draft || null;
+    const t = existing || draft || {
       type:"Despesa", description:"", value:"", category:"", subcategory:"",
       accountId: S.accounts[0]?.id || "", paymentMethod:"Débito", cardId:"",
       status:"Pago", fixed:false, date: todayStr(), dueDate: todayStr(),
       installments:1, notes:""
     };
 
-    const catOptions = (type) => type==="Receita" ? RECEITA_CATS : Object.keys(DESPESA_CATS);
-    const subOptions = (cat) => DESPESA_CATS[cat] || [];
+    const catOptions = (type) => type==="Receita" ? S.categories.receita : Object.keys(S.categories.despesa);
+    const subOptions = (cat) => S.categories.despesa[cat] || [];
 
     const html = `
       <div class="modal-head">

@@ -35,7 +35,7 @@ const TransactionsView = {
     const f = this.filters;
     const accName = (id)=> (S.accounts.find(a=>a.id===id)||{}).name || "—";
     const cardName = (id)=> (S.cards.find(c=>c.id===id)||{}).name || "—";
-    const allCats = [...Object.keys(DESPESA_CATS), ...RECEITA_CATS];
+    const allCats = [...Object.keys(S.categories.despesa), ...S.categories.receita];
 
     container.innerHTML = `
       <div class="section-head" style="margin-top:0;"><h2>Lançamentos</h2></div>

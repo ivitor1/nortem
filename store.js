@@ -26,7 +26,9 @@ const Store = {
       profile:{name:"Você"},
       settings:{theme:"light", ruleNecessidades:0.5, ruleDesejos:0.3, ruleInvestimentos:0.2, demo:false, selectedYm: ymKey(todayStr())},
       accounts:[], cards:[], categoryGroups:this.defaultCategoryGroups(), budgets:this.defaultBudgets(),
+      categories:this.defaultCategories(),
       transactions:[], debts:[], investments:[], goals:[],
+      assistant:{apiKey:"", model:"claude-haiku-4-5-20251001", messages:[]},
     };
     return {
       profile: {...blank.profile, ...(data.profile||{})},
@@ -35,10 +37,15 @@ const Store = {
       cards: data.cards || [],
       categoryGroups: {...blank.categoryGroups, ...(data.categoryGroups||{})},
       budgets: {...blank.budgets, ...(data.budgets||{})},
+      categories: {
+        despesa: {...blank.categories.despesa, ...((data.categories||{}).despesa||{})},
+        receita: (data.categories && data.categories.receita) || blank.categories.receita,
+      },
       transactions: data.transactions || [],
       debts: data.debts || [],
       investments: data.investments || [],
       goals: data.goals || [],
+      assistant: {...blank.assistant, ...(data.assistant||{}), messages: (data.assistant && data.assistant.messages) || []},
     };
   },
 
@@ -59,6 +66,12 @@ const Store = {
   },
   defaultBudgets(){
     return {"Moradia":1500,"Alimentação":800,"Transporte":400,"Saúde":250,"Lazer":300,"Educação":200,"Financeiro":150,"Pessoal":250};
+  },
+  defaultCategories(){
+    // Deep copy so callers never mutate the shared defaults by accident.
+    const despesa = {};
+    Object.entries(DEFAULT_DESPESA_CATS).forEach(([k,v])=>{ despesa[k] = [...v]; });
+    return { despesa, receita: [...DEFAULT_RECEITA_CATS] };
   },
 
   // ------------------------------------------------------------ seed data
@@ -145,8 +158,10 @@ const Store = {
       accounts, cards,
       categoryGroups: this.defaultCategoryGroups(),
       budgets: this.defaultBudgets(),
+      categories: this.defaultCategories(),
       transactions: tx,
       debts, investments, goals,
+      assistant: { apiKey:"", model:"claude-haiku-4-5-20251001", messages: [] },
     };
   },
 
@@ -157,7 +172,9 @@ const Store = {
       accounts: [], cards: [],
       categoryGroups: this.defaultCategoryGroups(),
       budgets: this.defaultBudgets(),
+      categories: this.defaultCategories(),
       transactions: [], debts: [], investments: [], goals: [],
+      assistant: { apiKey: this.state.assistant?.apiKey || "", model: this.state.assistant?.model || "claude-haiku-4-5-20251001", messages: [] },
     };
     this.persist();
   },
@@ -229,6 +246,81 @@ const Store = {
   updateSettings(patch){ this.state.settings = {...this.state.settings, ...patch}; this.persist(); },
   updateProfile(patch){ this.state.profile = {...this.state.profile, ...patch}; this.persist(); },
 
+  // ------------------------------------------------------- category CRUD
+  addDespesaCategory(name){
+    name = (name||"").trim(); if(!name || this.state.categories.despesa[name]) return false;
+    this.state.categories.despesa[name] = [];
+    this.state.categoryGroups[name] = "Necessidades";
+    if(!(name in this.state.budgets)) this.state.budgets[name] = 0;
+    this.persist(); return true;
+  },
+  renameDespesaCategory(oldName, newName){
+    newName = (newName||"").trim();
+    if(!newName || oldName===newName || !this.state.categories.despesa[oldName] || this.state.categories.despesa[newName]) return false;
+    this.state.categories.despesa[newName] = this.state.categories.despesa[oldName];
+    delete this.state.categories.despesa[oldName];
+    if(this.state.categoryGroups[oldName]){ this.state.categoryGroups[newName] = this.state.categoryGroups[oldName]; delete this.state.categoryGroups[oldName]; }
+    if(oldName in this.state.budgets){ this.state.budgets[newName] = this.state.budgets[oldName]; delete this.state.budgets[oldName]; }
+    this.state.transactions.forEach(t=>{ if(t.category===oldName) t.category = newName; });
+    this.persist(); return true;
+  },
+  deleteDespesaCategory(name){
+    if(!this.state.categories.despesa[name]) return false;
+    delete this.state.categories.despesa[name];
+    delete this.state.categoryGroups[name];
+    delete this.state.budgets[name];
+    // transactions keep their historical category text even if the category was removed from the list
+    this.persist(); return true;
+  },
+  addSubcategory(cat, sub){
+    sub = (sub||"").trim();
+    if(!this.state.categories.despesa[cat] || !sub || this.state.categories.despesa[cat].includes(sub)) return false;
+    this.state.categories.despesa[cat].push(sub);
+    this.persist(); return true;
+  },
+  renameSubcategory(cat, oldSub, newSub){
+    newSub = (newSub||"").trim();
+    const list = this.state.categories.despesa[cat]; if(!list) return false;
+    const i = list.indexOf(oldSub); if(i<0 || !newSub || list.includes(newSub)) return false;
+    list[i] = newSub;
+    this.state.transactions.forEach(t=>{ if(t.category===cat && t.subcategory===oldSub) t.subcategory = newSub; });
+    this.persist(); return true;
+  },
+  deleteSubcategory(cat, sub){
+    const list = this.state.categories.despesa[cat]; if(!list) return false;
+    this.state.categories.despesa[cat] = list.filter(s=>s!==sub);
+    this.persist(); return true;
+  },
+  addReceitaCategory(name){
+    name = (name||"").trim(); if(!name || this.state.categories.receita.includes(name)) return false;
+    this.state.categories.receita.push(name);
+    this.persist(); return true;
+  },
+  renameReceitaCategory(oldName, newName){
+    newName = (newName||"").trim();
+    const list = this.state.categories.receita;
+    const i = list.indexOf(oldName); if(i<0 || !newName || list.includes(newName)) return false;
+    list[i] = newName;
+    this.state.transactions.forEach(t=>{ if(t.type==="Receita" && t.category===oldName) t.category = newName; });
+    this.persist(); return true;
+  },
+  deleteReceitaCategory(name){
+    this.state.categories.receita = this.state.categories.receita.filter(c=>c!==name);
+    this.persist(); return true;
+  },
+
+  // ------------------------------------------------------- assistant / chat
+  setAssistantSettings(patch){ this.state.assistant = {...this.state.assistant, ...patch}; this.persist(); },
+  addChatMessage(role, text){
+    this.state.assistant.messages.push({ role, text, at: new Date().toISOString() });
+    // keep a generous but bounded history so the browser storage never grows unbounded
+    if(this.state.assistant.messages.length > 200){
+      this.state.assistant.messages = this.state.assistant.messages.slice(-200);
+    }
+    this.persist();
+  },
+  clearChat(){ this.state.assistant.messages = []; this.persist(); },
+
   // ============================================================ SELECTORS
   monthTransactions(ym){
     return this.state.transactions.filter(t => ymKey(t.date) === ym);
@@ -250,7 +342,7 @@ const Store = {
 
   categoryBreakdown(ym, tipo="Despesa"){
     const txs = this.monthTransactions(ym).filter(t=>t.type===tipo);
-    const cats = tipo==="Despesa" ? Object.keys(DESPESA_CATS) : RECEITA_CATS;
+    const cats = tipo==="Despesa" ? Object.keys(this.state.categories.despesa) : this.state.categories.receita;
     const receita = this.totalsForMonth(ym).receita;
     const rows = cats.map(cat => {
       const valor = txs.filter(t=>t.category===cat).reduce((a,t)=>a+Number(t.value||0),0);
@@ -501,5 +593,54 @@ const Store = {
         saldo: previstoReceita - previstoDespesa });
     }
     return out;
+  },
+
+  // ---- long-range history for the AI assistant's "memory" (up to 5 years) ----
+  longHistorySeries(maxMonths=60){
+    if(this.state.transactions.length===0) return [];
+    const dates = this.state.transactions.map(t=>t.date).sort();
+    const firstYm = ymKey(dates[0]);
+    const endYm = this.state.settings.selectedYm;
+    let months = [];
+    let cursor = firstYm;
+    let guard = 0;
+    while(cursor <= endYm && guard < 1000){
+      months.push(cursor);
+      cursor = addMonths(cursor+"-01",1).slice(0,7);
+      guard++;
+    }
+    if(months.length > maxMonths) months = months.slice(-maxMonths);
+    return months.map(ym=>{
+      const t = this.totalsForMonth(ym);
+      return { ym, ...t };
+    });
+  },
+
+  // ---- compact text summary of the whole financial picture, used as the
+  // AI assistant's context so it can answer questions with real numbers
+  // without needing the entire transaction history sent every time ----
+  financialContextSummary(){
+    const ym = this.state.settings.selectedYm;
+    const t = this.totalsForMonth(ym);
+    const health = this.healthScore(ym);
+    const budgets = this.budgetStatus(ym).filter(b=>b.orcamento>0);
+    const debts = this.debtsSummary();
+    const inv = this.investmentsSummary();
+    const goals = this.goalsList();
+    const history = this.longHistorySeries(60);
+    const historyLines = history.map(m=>`${m.ym}: receita ${money(m.receita)}, despesa ${money(m.despesa)}, saldo ${money(m.saldo)}`).join("\n");
+
+    return [
+      `Perfil: ${this.state.profile.name}.`,
+      `Mês de referência selecionado no app: ${ym}.`,
+      `Resumo do mês: receita ${money(t.receita)}, despesa ${money(t.despesa)}, saldo ${money(t.saldo)}, ${pct(t.pctRenda)} da renda comprometida.`,
+      `Saúde financeira: ${health.score}/100 (${health.label}). Fatores: ${health.factors.map(f=>`${f.label} ${f.value}%`).join(", ")}.`,
+      budgets.length ? `Orçamentos definidos: ${budgets.map(b=>`${b.categoria} ${money(b.gasto)}/${money(b.orcamento)} (${pct(b.orcamento?b.gasto/b.orcamento:0)})`).join("; ")}.` : `Nenhum orçamento definido ainda.`,
+      `Dívidas: total original ${money(debts.totalOriginal)}, restante ${money(debts.totalRestante)}, ${pct(debts.pctQuitado)} quitado.`,
+      `Investimentos: valor atual ${money(inv.totalAtual)}, rendimento acumulado ${money(inv.totalRendimentos)} (${pct(inv.rentabilidade)}).`,
+      goals.length ? `Metas: ${goals.map(g=>`${g.name} ${money(g.current)}/${money(g.target)} (${pct(g.pctConcluido)})`).join("; ")}.` : `Nenhuma meta cadastrada.`,
+      `Patrimônio líquido: ${money(this.patrimonioLiquido())}.`,
+      history.length ? `Histórico mensal disponível (${history.length} meses, de ${history[0].ym} até ${history[history.length-1].ym}):\n${historyLines}` : ``,
+    ].filter(Boolean).join("\n");
   },
 };
