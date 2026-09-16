@@ -1,414 +1,285 @@
-```html
 <!DOCTYPE html>
+
 <html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-
 <title>Nortem — Controle Financeiro</title>
-
 <meta name="description" content="Sua vida financeira, organizada." />
 
-<!-- =========================
-     FONTES
-========================= -->
+<!-- Fonts -->
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<link
-  href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
-  rel="stylesheet"
->
+<!-- Icons -->
 
-<!-- =========================
-     ÍCONES
-========================= -->
-<script
-  src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"
-  defer
-></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
 
-<!-- =========================
-     GRÁFICOS
-========================= -->
-<script
-  src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
-  defer
-></script>
+<!-- Charts -->
 
-<!-- =========================
-     CSS
-========================= -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+
+<!-- Main CSS -->
+
 <link rel="stylesheet" href="./styles.css" />
-
 </head>
 
 <body>
 
-<!-- =====================================================
-     APP
-===================================================== -->
+<!-- ============ APP SHELL ============ -->
 
 <div class="app" id="app">
 
-  <!-- ===================================================
-       SIDEBAR DESKTOP
-  ==================================================== -->
+  <!-- Sidebar (desktop) -->
 
   <aside class="sidebar" id="sidebar">
-
     <div class="brand">
       <span class="brand-mark">N</span>
       <span class="brand-name">Nortem</span>
     </div>
 
-    <nav class="nav" id="mainNav">
+```
+<nav class="nav" id="mainNav">
+  <button class="nav-item" data-route="dashboard">
+    <i data-lucide="layout-dashboard"></i>
+    <span>Início</span>
+  </button>
 
-      <button class="nav-item" data-route="dashboard">
-        <i data-lucide="layout-dashboard"></i>
-        <span>Início</span>
-      </button>
+  <button class="nav-item" data-route="transactions">
+    <i data-lucide="arrow-left-right"></i>
+    <span>Lançamentos</span>
+  </button>
 
-      <button class="nav-item" data-route="transactions">
-        <i data-lucide="arrow-left-right"></i>
-        <span>Lançamentos</span>
-      </button>
+  <button class="nav-item" data-route="budgets">
+    <i data-lucide="pie-chart"></i>
+    <span>Orçamentos</span>
+  </button>
 
-      <button class="nav-item" data-route="budgets">
-        <i data-lucide="pie-chart"></i>
-        <span>Orçamentos</span>
-      </button>
+  <button class="nav-item" data-route="cards">
+    <i data-lucide="credit-card"></i>
+    <span>Cartões</span>
+  </button>
 
-      <button class="nav-item" data-route="cards">
-        <i data-lucide="credit-card"></i>
-        <span>Cartões</span>
-      </button>
+  <button class="nav-item" data-route="accounts">
+    <i data-lucide="wallet"></i>
+    <span>Contas</span>
+  </button>
 
-      <button class="nav-item" data-route="accounts">
-        <i data-lucide="wallet"></i>
-        <span>Contas</span>
-      </button>
+  <button class="nav-item" data-route="debts">
+    <i data-lucide="trending-down"></i>
+    <span>Dívidas</span>
+  </button>
 
-      <button class="nav-item" data-route="debts">
-        <i data-lucide="trending-down"></i>
-        <span>Dívidas</span>
-      </button>
+  <button class="nav-item" data-route="investments">
+    <i data-lucide="trending-up"></i>
+    <span>Investimentos</span>
+  </button>
 
-      <button class="nav-item" data-route="investments">
-        <i data-lucide="trending-up"></i>
-        <span>Investimentos</span>
-      </button>
+  <button class="nav-item" data-route="goals">
+    <i data-lucide="target"></i>
+    <span>Metas</span>
+  </button>
 
-      <button class="nav-item" data-route="goals">
-        <i data-lucide="target"></i>
-        <span>Metas</span>
-      </button>
+  <button class="nav-item" data-route="forecast">
+    <i data-lucide="calendar-clock"></i>
+    <span>Previsão</span>
+  </button>
 
-      <button class="nav-item" data-route="forecast">
-        <i data-lucide="calendar-clock"></i>
-        <span>Previsão</span>
-      </button>
+  <button class="nav-item" data-route="settings">
+    <i data-lucide="settings"></i>
+    <span>Configurações</span>
+  </button>
+</nav>
 
-      <button class="nav-item" data-route="settings">
-        <i data-lucide="settings"></i>
-        <span>Configurações</span>
-      </button>
-
-    </nav>
-
-    <!-- MODO ESCURO -->
-
-    <button class="theme-toggle" id="themeToggle">
-
-      <i data-lucide="moon"></i>
-
-      <span>Modo escuro</span>
-
-    </button>
+<button class="theme-toggle" id="themeToggle">
+  <i data-lucide="moon"></i>
+  <span>Modo escuro</span>
+</button>
+```
 
   </aside>
 
-
-  <!-- ===================================================
-       ÁREA PRINCIPAL
-  ==================================================== -->
+  <!-- Main -->
 
   <main class="main">
 
-    <!-- TOPBAR -->
+```
+<header class="topbar">
+  <button class="icon-btn only-mobile" id="menuBtn">
+    <i data-lucide="menu"></i>
+  </button>
 
-    <header class="topbar">
+  <div class="topbar-title" id="topbarTitle">Início</div>
 
-      <!-- Menu mobile -->
+  <div class="topbar-actions">
 
-      <button
-        class="icon-btn only-mobile"
-        id="menuBtn"
-      >
-        <i data-lucide="menu"></i>
-      </button>
+    <button class="icon-btn" id="alertsBtn">
+      <i data-lucide="bell"></i>
+      <span class="dot" id="alertsDot" hidden></span>
+    </button>
 
+    <button class="btn btn-primary" id="newTxBtn">
+      <i data-lucide="plus"></i>
+      <span>Novo lançamento</span>
+    </button>
 
-      <!-- Título -->
+  </div>
+</header>
 
-      <div
-        class="topbar-title"
-        id="topbarTitle"
-      >
-        Início
-      </div>
-
-
-      <!-- Ações -->
-
-      <div class="topbar-actions">
-
-        <button
-          class="icon-btn"
-          id="alertsBtn"
-        >
-
-          <i data-lucide="bell"></i>
-
-          <span
-            class="dot"
-            id="alertsDot"
-            hidden
-          ></span>
-
-        </button>
-
-
-        <button
-          class="btn btn-primary"
-          id="newTxBtn"
-        >
-
-          <i data-lucide="plus"></i>
-
-          <span>Novo lançamento</span>
-
-        </button>
-
-      </div>
-
-    </header>
-
-
-    <!-- =================================================
-         CONTEÚDO DINÂMICO
-    ================================================== -->
-
-    <div
-      class="view-container"
-      id="view"
-    ></div>
+<div class="view-container" id="view"></div>
+```
 
   </main>
 
+  <!-- Mobile bottom nav -->
 
-  <!-- ===================================================
-       MENU INFERIOR MOBILE
-  ==================================================== -->
+  <nav class="bottom-nav" id="bottomNav">
 
-  <nav
-    class="bottom-nav"
-    id="bottomNav"
-  >
+```
+<button class="bn-item" data-route="dashboard">
+  <i data-lucide="home"></i>
+  <span>Início</span>
+</button>
 
-    <button
-      class="bn-item"
-      data-route="dashboard"
-    >
+<button class="bn-item" data-route="transactions">
+  <i data-lucide="arrow-left-right"></i>
+  <span>Lançamentos</span>
+</button>
 
-      <i data-lucide="home"></i>
+<button class="bn-item" data-route="cards">
+  <i data-lucide="credit-card"></i>
+  <span>Cartões</span>
+</button>
 
-      <span>Início</span>
+<button class="bn-item" data-route="goals">
+  <i data-lucide="target"></i>
+  <span>Metas</span>
+</button>
 
-    </button>
-
-
-    <button
-      class="bn-item"
-      data-route="transactions"
-    >
-
-      <i data-lucide="arrow-left-right"></i>
-
-      <span>Lançamentos</span>
-
-    </button>
-
-
-    <button
-      class="bn-item"
-      data-route="cards"
-    >
-
-      <i data-lucide="credit-card"></i>
-
-      <span>Cartões</span>
-
-    </button>
-
-
-    <button
-      class="bn-item"
-      data-route="goals"
-    >
-
-      <i data-lucide="target"></i>
-
-      <span>Metas</span>
-
-    </button>
-
-
-    <button
-      class="bn-item"
-      id="moreNavBtn"
-    >
-
-      <i data-lucide="menu"></i>
-
-      <span>Mais</span>
-
-    </button>
+<button class="bn-item" id="moreNavBtn">
+  <i data-lucide="menu"></i>
+  <span>Mais</span>
+</button>
+```
 
   </nav>
 
-
-  <!-- BOTÃO FLUTUANTE MOBILE -->
-
-  <button
-    class="bn-fab"
-    id="fabAdd"
-  >
-
+  <button class="bn-fab" id="fabAdd">
     <i data-lucide="plus"></i>
-
   </button>
 
 </div>
 
+<!-- Mobile "mais" sheet -->
 
-<!-- =====================================================
-     MENU "MAIS" MOBILE
-===================================================== -->
+<div class="sheet-backdrop" id="moreBackdrop" hidden>
 
-<div
-  class="sheet-backdrop"
-  id="moreBackdrop"
-  hidden
->
+  <div class="sheet" id="moreSheet">
 
-  <div
-    class="sheet"
-    id="moreSheet"
-  >
+```
+<div class="sheet-handle"></div>
 
-    <div class="sheet-handle"></div>
+<button class="sheet-item" data-route="budgets">
+  <i data-lucide="pie-chart"></i>
+  <span>Orçamentos</span>
+</button>
 
+<button class="sheet-item" data-route="accounts">
+  <i data-lucide="wallet"></i>
+  <span>Contas</span>
+</button>
 
-    <button
-      class="sheet-item"
-      data-route="budgets"
-    >
+<button class="sheet-item" data-route="debts">
+  <i data-lucide="trending-down"></i>
+  <span>Dívidas</span>
+</button>
 
-      <i data-lucide="pie-chart"></i>
+<button class="sheet-item" data-route="investments">
+  <i data-lucide="trending-up"></i>
+  <span>Investimentos</span>
+</button>
 
-      <span>Orçamentos</span>
+<button class="sheet-item" data-route="forecast">
+  <i data-lucide="calendar-clock"></i>
+  <span>Previsão</span>
+</button>
 
-    </button>
-
-
-    <button
-      class="sheet-item"
-      data-route="accounts"
-    >
-
-      <i data-lucide="wallet"></i>
-
-      <span>Contas</span>
-
-    </button>
-
-
-    <button
-      class="sheet-item"
-      data-route="debts"
-    >
-
-      <i data-lucide="trending-down"></i>
-
-      <span>Dívidas</span>
-
-    </button>
-
-
-    <button
-      class="sheet-item"
-      data-route="investments"
-    >
-
-      <i data-lucide="trending-up"></i>
-
-      <span>Investimentos</span>
-
-    </button>
-
-
-    <button
-      class="sheet-item"
-      data-route="forecast"
-    >
-
-      <i data-lucide="calendar-clock"></i>
-
-      <span>Previsão</span>
-
-    </button>
-
-
-    <button
-      class="sheet-item"
-      data-route="settings"
-    >
-
-      <i data-lucide="settings"></i>
-
-      <span>Configurações</span>
-
-    </button>
+<button class="sheet-item" data-route="settings">
+  <i data-lucide="settings"></i>
+  <span>Configurações</span>
+</button>
+```
 
   </div>
 
 </div>
 
-
-<!-- =====================================================
-     MODAIS
-===================================================== -->
+<!-- Overlay root for modals -->
 
 <div id="modalRoot"></div>
 
+<!-- AI Assistant -->
 
-<!-- =====================================================
-     TOASTS / NOTIFICAÇÕES
-===================================================== -->
+<button class="assistant-fab" id="assistantFab" title="Assistente Nortem">
+  <i data-lucide="sparkles"></i>
+</button>
 
-<div
-  id="toastRoot"
-  class="toast-root"
-></div>
+<div class="assistant-backdrop" id="assistantBackdrop" hidden></div>
 
+<aside class="assistant-panel" id="assistantPanel" hidden>
 
-<!-- =====================================================
-     JAVASCRIPT
-     
-     IMPORTANTE:
-     Os arquivos estão todos na raiz do projeto.
-===================================================== -->
+  <div class="assistant-head">
+
+```
+<div class="assistant-head-title">
+
+  <div class="assistant-avatar">
+    <i data-lucide="sparkles"></i>
+  </div>
+
+  <div>
+    <b>Assistente Nortem</b>
+    <span class="assistant-mode" id="assistantModeTag">
+      modo básico
+    </span>
+  </div>
+
+</div>
+
+<button class="icon-btn" id="closeAssistant">
+  <i data-lucide="x"></i>
+</button>
+```
+
+  </div>
+
+  <div class="assistant-messages" id="assistantMessages"></div>
+
+  <div class="assistant-inputbar">
+
+```
+<textarea
+  id="assistantInput"
+  rows="1"
+  placeholder="Pergunte algo ou diga um gasto: &quot;gastei 45 no mercado hoje&quot;"
+></textarea>
+
+<button class="icon-btn assistant-send" id="assistantSend">
+  <i data-lucide="arrow-up"></i>
+</button>
+```
+
+  </div>
+
+</aside>
+
+<!-- Toast root -->
+
+<div id="toastRoot" class="toast-root"></div>
+
+<!-- ============ SCRIPTS ============ -->
 
 <script src="./utils.js"></script>
 
@@ -417,6 +288,8 @@
 <script src="./ui.js"></script>
 
 <script src="./charts.js"></script>
+
+<script src="./assistant.js"></script>
 
 <script src="./dashboard.js"></script>
 
@@ -442,4 +315,3 @@
 
 </body>
 </html>
-```
