@@ -8,8 +8,42 @@ const STORAGE_KEY = "nortem_finance_v1";
 const Store = {
   state: null,
   listeners: [],
+  cloud: { enabled:false, client:null, userId:null, userEmail:null, saveTimer:null },
+
+  // ------------------------------------------------------------- cloud setup
+  initCloudClient(){
+    if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase){
+      this.cloud.enabled = true;
+      this.cloud.client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    }
+  },
+
+  async loadFromCloud(){
+    const { data, error } = await this.cloud.client
+      .from("app_state").select("data").eq("user_id", this.cloud.userId).maybeSingle();
+    if(error) throw error;
+    if(data && data.data){
+      this.state = this.normalize(data.data);
+    } else {
+      this.state = this.seed(); // first login for this account: start from the demo data
+      await this.saveToCloud();
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+  },
+
+  async saveToCloud(){
+    if(!this.cloud.enabled || !this.cloud.userId) return;
+    try{
+      const { error } = await this.cloud.client.from("app_state").upsert({
+        user_id: this.cloud.userId, data: this.state, updated_at: new Date().toISOString(),
+      });
+      if(error) console.error("Falha ao salvar na nuvem:", error);
+    }catch(err){ console.error("Falha ao salvar na nuvem:", err); }
+  },
 
   // ---------------------------------------------------------------- init
+  // Local-mode only (no Supabase configured). Cloud mode is bootstrapped
+  // by Auth.boot() -> onLoggedIn() -> loadFromCloud() instead.
   init(){
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
@@ -52,6 +86,10 @@ const Store = {
   persist(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
     this.emit();
+    if(this.cloud.enabled && this.cloud.userId){
+      clearTimeout(this.cloud.saveTimer);
+      this.cloud.saveTimer = setTimeout(()=>this.saveToCloud(), 500);
+    }
   },
 
   on(fn){ this.listeners.push(fn); },
@@ -374,6 +412,34 @@ const Store = {
     return out;
   },
 
+  // Stable, chronological list of months for the global month picker — always
+  // anchored to the real calendar date, never to whatever is currently selected
+  // (that was the bug: recentring on the selection made older months vanish).
+  availableMonths(){
+    const dates = this.state.transactions.map(t=>t.date).filter(Boolean).sort();
+    const earliest = dates.length ? ymKey(dates[0]) : addMonths(todayStr(),-11).slice(0,7);
+    // The list must reach far enough forward to cover scheduled items and future
+    // installments — otherwise those months can't be selected in the picker.
+    const dueDates = this.state.transactions.map(t=>t.dueDate||t.date).filter(Boolean).sort();
+    const latestDue = dueDates.length ? ymKey(dueDates[dueDates.length-1]) : "";
+    const horizon = addMonths(todayStr(), 2).slice(0,7);
+    const end = latestDue > horizon ? latestDue : horizon;
+    const startYm = earliest < end ? earliest : end;
+    let months = [];
+    let cursor = startYm;
+    let guard = 0;
+    while(cursor <= end && guard < 400){
+      months.push(cursor);
+      cursor = addMonths(cursor+"-01",1).slice(0,7);
+      guard++;
+    }
+    // also make sure the currently selected month is never missing from the list
+    // (e.g. right after importing a backup with a different date range)
+    const sel = this.state.settings.selectedYm;
+    if(sel && !months.includes(sel)) months.push(sel);
+    return months.sort();
+  },
+
   accountBalance(accountId){
     const acc = this.state.accounts.find(a=>a.id===accountId);
     if(!acc) return 0;
@@ -577,7 +643,10 @@ const Store = {
 
   // ---- forecast: baseline fixed avg + already-scheduled transactions ----
   forecast(nMonths=3){
-    const ym = this.state.settings.selectedYm;
+    // Always forward-looking from the real current date — deliberately NOT tied
+    // to the global month picker (which is for reviewing a given month), since
+    // "next months" only makes sense counted from today.
+    const ym = ymKey(todayStr());
     const hist = this.last12MonthsSeries(ym).filter(m=>m.receita>0 || m.despesa>0).slice(-3);
     const baseFixed = hist.length ? hist.reduce((a,m)=>a+m.fixas,0)/hist.length : 0;
     const baseReceita = hist.length ? hist.reduce((a,m)=>a+m.receita,0)/hist.length : 0;

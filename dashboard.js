@@ -20,17 +20,12 @@ const DashboardView = {
     const insights = Store.insights(ym);
     const alerts = Store.alerts(ym);
 
-    const monthOptions = this.monthOptions(ym);
-
     container.innerHTML = `
       <div class="dash-header">
         <div>
-          <h1 style="font-family:var(--font-display); font-size:24px; font-weight:700;">Bom dia, ${escapeHtml(S.profile.name)} 👋</h1>
-          <p style="color:var(--ink-soft); font-size:14px; margin-top:4px;">Aqui está o resumo da sua vida financeira.</p>
+          <h1 style="font-family:var(--font-display); font-size:24px; font-weight:700;">${greeting().text}, ${escapeHtml(S.profile.name)} ${greeting().emoji}</h1>
+          <p style="color:var(--ink-soft); font-size:14px; margin-top:4px;">Aqui está o resumo da sua vida financeira em ${MESES_PT[Number(ym.split('-')[1])-1]} de ${ym.split('-')[0]}.</p>
         </div>
-        <select class="filter-select" id="monthSelect" style="font-weight:600;">
-          ${monthOptions.map(m=>`<option value="${m.ym}" ${m.ym===ym?'selected':''}>${m.label}</option>`).join("")}
-        </select>
       </div>
 
       <div class="kpi-grid" style="margin-top:20px;">
@@ -125,10 +120,6 @@ const DashboardView = {
       </div>
     `;
 
-    document.getElementById("monthSelect").onchange = (e)=>{
-      Store.setSelectedYm(e.target.value);
-      App.rerender();
-    };
     document.querySelectorAll("#catList .cat-row").forEach(row=>{
       row.onclick = ()=>{ App.navigate("transactions", { category: row.dataset.cat }); };
     });
@@ -136,16 +127,4 @@ const DashboardView = {
     Charts.renderFlow("flowChart", Store.last12MonthsSeries(ym));
     Charts.renderDonut("catDonut", cats, (cat)=>App.navigate("transactions", {category:cat}));
   },
-
-  monthOptions(currentYm){
-    const opts = [];
-    const series = Store.last12MonthsSeries(currentYm);
-    series.forEach(s=>opts.push({ym:s.ym, label: `${MESES_PT[Number(s.ym.split("-")[1])-1]} ${s.ym.split("-")[0]}`}));
-    for(let i=1;i<=2;i++){
-      const fym = addMonths(currentYm+"-01", i).slice(0,7);
-      const [y,m] = fym.split("-");
-      opts.push({ym:fym, label: `${MESES_PT[Number(m)-1]} ${y}`});
-    }
-    return opts;
-  }
 };

@@ -38,7 +38,10 @@ const TransactionsView = {
     const allCats = [...Object.keys(S.categories.despesa), ...S.categories.receita];
 
     container.innerHTML = `
-      <div class="section-head" style="margin-top:0;"><h2>Lançamentos</h2></div>
+      <div class="section-head" style="margin-top:0;">
+        <h2>Lançamentos</h2>
+        <button class="btn btn-secondary btn-sm" id="importPdfBtn"><i data-lucide="file-up"></i>Importar extrato (PDF)</button>
+      </div>
 
       <div class="table-card">
         <div class="table-toolbar">
@@ -91,6 +94,7 @@ const TransactionsView = {
     `;
 
     // wire toolbar
+    document.getElementById("importPdfBtn").onclick = ()=>PdfImport.openPicker();
     document.getElementById("txSearch").oninput = debounce((e)=>{ this.filters.search = e.target.value; App.rerender(); }, 250);
     document.getElementById("fPeriod").onchange = (e)=>{ this.filters.period = e.target.value; App.rerender(); };
     document.getElementById("fType").onchange = (e)=>{ this.filters.type = e.target.value; App.rerender(); };

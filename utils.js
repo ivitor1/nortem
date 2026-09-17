@@ -90,6 +90,14 @@ function statusPillClass(pctUsed){
   return "ok";
 }
 
+function greeting(){
+  const h = new Date().getHours();
+  if(h >= 5 && h < 12)  return { text:"Bom dia",   emoji:"☀️" };
+  if(h >= 12 && h < 18) return { text:"Boa tarde", emoji:"👋" };
+  if(h >= 18 && h < 24) return { text:"Boa noite", emoji:"🌙" };
+  return { text:"Boa madrugada", emoji:"🌛" }; // 0h–5h
+}
+
 function initIcons(){
   if(window.lucide) window.lucide.createIcons();
 }

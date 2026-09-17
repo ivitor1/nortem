@@ -21,14 +21,25 @@ const App = {
   },
 
   init(){
-    Store.init();
+    Store.initCloudClient();
+    if(Store.cloud.enabled){
+      Auth.boot(); // will call App.mount() once a session + data are ready
+    } else {
+      Store.init();
+      this.mount();
+    }
+  },
+
+  mount(){
     UI.applyTheme(Store.state.settings.theme || "light");
-
-    this.wireNav();
-    this.wireThemeToggle();
-    this.wireNewTx();
-    this.wireMobileSheet();
-
+    if(!this.mounted){
+      this.wireNav();
+      this.wireThemeToggle();
+      this.wireNewTx();
+      this.wireMobileSheet();
+      this.wireMonthPicker();
+      this.mounted = true;
+    }
     this.navigate("dashboard");
   },
 
@@ -53,6 +64,32 @@ const App = {
     if(mod) mod.render(container, this.params);
     initIcons();
     this.refreshAlertsDot();
+    this.renderMonthPicker();
+  },
+
+  renderMonthPicker(){
+    const sel = document.getElementById("globalMonthSelect");
+    if(!sel) return;
+    const months = Store.availableMonths();
+    const current = Store.state.settings.selectedYm;
+    const options = months.map(ym=>{
+      const [y,m] = ym.split("-");
+      return `<option value="${ym}" ${ym===current?"selected":""}>${MESES_PT[Number(m)-1]} ${y}</option>`;
+    }).join("");
+    // Only touch the DOM if something actually changed — avoids losing the
+    // dropdown's open state on every re-render.
+    if(sel.dataset.cache !== options){
+      sel.innerHTML = options;
+      sel.dataset.cache = options;
+    }
+    sel.value = current;
+  },
+
+  wireMonthPicker(){
+    document.getElementById("globalMonthSelect").addEventListener("change", (e)=>{
+      Store.setSelectedYm(e.target.value);
+      this.renderView();
+    });
   },
 
   refreshAlertsDot(){
