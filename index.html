@@ -7,6 +7,8 @@
 <title>Nortem — Controle Financeiro</title>
 <meta name="description" content="Sua vida financeira, organizada." />
 
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230FA678'/%3E%3Cpath d='M7 24V8.8c0-.9 1.1-1.3 1.7-.6l11.6 13c.6.7 1.7.3 1.7-.6V8' stroke='white' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3Cpath d='M19.4 8H25v5.6' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E" />
+
 <!-- Fonts -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,6 +23,26 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
 
+<!-- PDF parsing (bank statement import) -->
+
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js" defer></script>
+
+<!-- Supabase configuration -->
+
+<script src="./supabase-config.js"></script>
+
+<script>
+  // Avoids a flash of the app shell before the login screen is ready,
+  // when cloud mode is on.
+  if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY){
+    document.write('<style>#app{display:none}</style>');
+
+} </script>
+
+<!-- Supabase -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+
 <!-- Main CSS -->
 
 <link rel="stylesheet" href="./styles.css" />
@@ -28,20 +50,137 @@
 
 <body>
 
+<!-- ============ AUTH SCREEN ============ -->
+
+<div class="auth-screen" id="authScreen" hidden>
+
+  <div class="auth-card">
+
+```
+<div class="brand" style="justify-content:center; padding-bottom:8px;">
+
+  <span class="brand-mark">
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M7 24V8.8c0-.9 1.1-1.3 1.7-.6l11.6 13c.6.7 1.7.3 1.7-.6V8"
+            stroke="currentColor"
+            stroke-width="3.4"
+            stroke-linecap="round"/>
+      <path d="M19.4 8H25v5.6"
+            stroke="currentColor"
+            stroke-width="3.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+    </svg>
+  </span>
+
+  <span class="brand-name">Nortem</span>
+
+</div>
+
+<p class="auth-subtitle" id="authSubtitle">
+  Entre para acessar suas finanças de qualquer lugar.
+</p>
+
+<div class="segmented" id="authTabs" style="margin-bottom:18px;">
+
+  <button type="button" data-tab="login" class="active">
+    Entrar
+  </button>
+
+  <button type="button" data-tab="signup">
+    Criar conta
+  </button>
+
+</div>
+
+<form id="authForm">
+
+  <div class="field">
+    <label>E-mail</label>
+    <input
+      type="email"
+      id="authEmail"
+      required
+      placeholder="voce@email.com"
+    />
+  </div>
+
+  <div class="field" style="margin-top:12px;">
+
+    <label>Senha</label>
+
+    <input
+      type="password"
+      id="authPassword"
+      required
+      minlength="6"
+      placeholder="Mínimo 6 caracteres"
+    />
+
+  </div>
+
+  <div id="authError" class="auth-error" hidden></div>
+
+  <button
+    type="submit"
+    class="btn btn-primary btn-block"
+    id="authSubmit"
+    style="margin-top:18px;"
+  >
+    Entrar
+  </button>
+
+</form>
+
+<p class="auth-foot">
+  Seus dados ficam isolados por login — cada pessoa vê só as próprias informações, em qualquer dispositivo.
+</p>
+```
+
+  </div>
+
+</div>
+
 <!-- ============ APP SHELL ============ -->
 
 <div class="app" id="app">
 
-  <!-- Sidebar (desktop) -->
+  <!-- Sidebar -->
 
   <aside class="sidebar" id="sidebar">
-    <div class="brand">
-      <span class="brand-mark">N</span>
-      <span class="brand-name">Nortem</span>
-    </div>
 
 ```
+<div class="brand">
+
+  <span class="brand-mark">
+
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+
+      <path
+        d="M7 24V8.8c0-.9 1.1-1.3 1.7-.6l11.6 13c.6.7 1.7.3 1.7-.6V8"
+        stroke="currentColor"
+        stroke-width="3.4"
+        stroke-linecap="round"
+      />
+
+      <path
+        d="M19.4 8H25v5.6"
+        stroke="currentColor"
+        stroke-width="3.4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+
+    </svg>
+
+  </span>
+
+  <span class="brand-name">Nortem</span>
+
+</div>
+
 <nav class="nav" id="mainNav">
+
   <button class="nav-item" data-route="dashboard">
     <i data-lucide="layout-dashboard"></i>
     <span>Início</span>
@@ -91,6 +230,7 @@
     <i data-lucide="settings"></i>
     <span>Configurações</span>
   </button>
+
 </nav>
 
 <button class="theme-toggle" id="themeToggle">
@@ -107,25 +247,45 @@
 
 ```
 <header class="topbar">
+
   <button class="icon-btn only-mobile" id="menuBtn">
     <i data-lucide="menu"></i>
   </button>
 
-  <div class="topbar-title" id="topbarTitle">Início</div>
+  <div class="topbar-title" id="topbarTitle">
+    Início
+  </div>
+
+  <select
+    class="filter-select month-picker"
+    id="globalMonthSelect"
+    title="Mês de referência"
+  ></select>
 
   <div class="topbar-actions">
 
     <button class="icon-btn" id="alertsBtn">
+
       <i data-lucide="bell"></i>
-      <span class="dot" id="alertsDot" hidden></span>
+
+      <span
+        class="dot"
+        id="alertsDot"
+        hidden
+      ></span>
+
     </button>
 
     <button class="btn btn-primary" id="newTxBtn">
+
       <i data-lucide="plus"></i>
+
       <span>Novo lançamento</span>
+
     </button>
 
   </div>
+
 </header>
 
 <div class="view-container" id="view"></div>
@@ -222,13 +382,26 @@
 
 <!-- AI Assistant -->
 
-<button class="assistant-fab" id="assistantFab" title="Assistente Nortem">
-  <i data-lucide="sparkles"></i>
-</button>
+<button
+class="assistant-fab"
+id="assistantFab"
+title="Assistente Nortem"
 
-<div class="assistant-backdrop" id="assistantBackdrop" hidden></div>
+>
 
-<aside class="assistant-panel" id="assistantPanel" hidden>
+<i data-lucide="sparkles"></i> </button>
+
+<div
+  class="assistant-backdrop"
+  id="assistantBackdrop"
+  hidden
+></div>
+
+<aside
+  class="assistant-panel"
+  id="assistantPanel"
+  hidden
+>
 
   <div class="assistant-head">
 
@@ -240,10 +413,16 @@
   </div>
 
   <div>
+
     <b>Assistente Nortem</b>
-    <span class="assistant-mode" id="assistantModeTag">
+
+    <span
+      class="assistant-mode"
+      id="assistantModeTag"
+    >
       modo básico
     </span>
+
   </div>
 
 </div>
@@ -255,7 +434,10 @@
 
   </div>
 
-  <div class="assistant-messages" id="assistantMessages"></div>
+  <div
+    class="assistant-messages"
+    id="assistantMessages"
+  ></div>
 
   <div class="assistant-inputbar">
 
@@ -266,7 +448,10 @@
   placeholder="Pergunte algo ou diga um gasto: &quot;gastei 45 no mercado hoje&quot;"
 ></textarea>
 
-<button class="icon-btn assistant-send" id="assistantSend">
+<button
+  class="icon-btn assistant-send"
+  id="assistantSend"
+>
   <i data-lucide="arrow-up"></i>
 </button>
 ```
@@ -277,7 +462,10 @@
 
 <!-- Toast root -->
 
-<div id="toastRoot" class="toast-root"></div>
+<div
+  id="toastRoot"
+  class="toast-root"
+></div>
 
 <!-- ============ SCRIPTS ============ -->
 
@@ -285,9 +473,13 @@
 
 <script src="./store.js"></script>
 
+<script src="./auth.js"></script>
+
 <script src="./ui.js"></script>
 
 <script src="./charts.js"></script>
+
+<script src="./pdf-import.js"></script>
 
 <script src="./assistant.js"></script>
 
