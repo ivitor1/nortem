@@ -50,8 +50,9 @@ const CardsView = {
                 <span>Fecha dia ${c.closingDay} · Vence dia ${c.dueDay}</span>
               </div>
               <div style="display:flex; gap:6px; margin-top:12px;">
-                <button class="btn btn-ghost btn-sm btn-edit-card"><i data-lucide="pencil"></i>Editar</button>
-                <button class="btn btn-ghost btn-sm btn-del-card"><i data-lucide="trash-2"></i>Remover</button>
+                ${u.faturaAtual>0 ? `<button class="btn btn-secondary btn-sm btn-pay-invoice" style="flex:1;"><i data-lucide="check-circle"></i>Pagar fatura (${money(u.faturaAtual)})</button>` : ""}
+                <button class="icon-btn btn-edit-card" title="Editar"><i data-lucide="pencil"></i></button>
+                <button class="icon-btn btn-del-card" title="Remover"><i data-lucide="trash-2"></i></button>
               </div>
             </div>
           </div>`;
@@ -86,6 +87,14 @@ const CardsView = {
           Store.deleteCard(id); UI.toast("Cartão removido."); App.rerender();
         }, {title:"Remover cartão"});
       };
+      el.querySelector(".btn-pay-invoice")?.addEventListener("click", ()=>{
+        const u = Store.cardUtilization(id, ym);
+        UI.confirm(`Isso marca ${money(u.faturaAtual)} em lançamentos como pagos e libera esse valor no limite do cartão.`, ()=>{
+          const n = Store.payCardInvoice(id, ym);
+          UI.toast(`Fatura paga — ${n} lançamento(s) atualizados, limite liberado.`);
+          App.rerender();
+        }, {title:"Pagar fatura", confirmLabel:"Pagar", danger:false});
+      });
     });
   },
 

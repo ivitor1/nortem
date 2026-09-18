@@ -214,6 +214,11 @@ const UI = {
         const isCredit = curPayment === "Crédito";
         root.querySelector("#cardWrap").style.display = isCredit ? "" : "none";
         root.querySelector("#installWrap").style.display = (isCredit && !isEdit) ? "" : "none";
+        // A compra no cartão só "some" do limite quando a fatura é paga — então,
+        // ao virar crédito numa compra NOVA, o status vira Pendente por padrão
+        // (sem isso, o valor nunca contava contra o limite do cartão).
+        const statusSel = root.querySelector("#f_status");
+        if(!isEdit && isCredit && statusSel.value === "Pago") statusSel.value = "Pendente";
       };
 
       root.querySelector("#f_installCheck").onchange = (e)=>{

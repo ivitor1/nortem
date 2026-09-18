@@ -147,12 +147,12 @@ const Store = {
       push(d(4),"Despesa","Energia elétrica","Moradia","Energia",acc.corrente,"Débito",null,"Pago",true,175+idx*5);
       push(d(5),"Despesa","Internet","Moradia","Internet",acc.corrente,"Débito",null,"Pago",true,99.9);
       push(d(6),"Despesa","Compras do mês","Alimentação","Mercado",acc.corrente,"Débito",null,"Pago",false,560+idx*30);
-      push(d(8),"Despesa","Ifood","Alimentação","Delivery",acc.corrente,"Crédito",card.nubank,"Pago",false,65+idx*8);
-      push(d(9),"Despesa","Gasolina","Transporte","Combustível",acc.corrente,"Crédito",card.nubank,"Pago",false,230);
+      push(d(8),"Despesa","Ifood","Alimentação","Delivery",acc.corrente,"Crédito",card.nubank,"Pendente",false,65+idx*8);
+      push(d(9),"Despesa","Gasolina","Transporte","Combustível",acc.corrente,"Crédito",card.nubank,"Pendente",false,230);
       push(d(12),"Despesa","Academia","Saúde","Academia",acc.corrente,"Débito",null,"Pago",true,99.9);
       push(d(13),"Despesa","Cinema","Lazer","Cinema",acc.carteira,"Dinheiro",null,"Pago",false,60);
       push(d(15),"Receita","Freelance design","Renda extra","Freelance",acc.corrente,"PIX",null,"Pago",false,idx===2?600:350);
-      push(d(18),"Despesa","Roupas","Pessoal","Roupas",acc.corrente,"Crédito",card.inter,"Pago",false,150);
+      push(d(18),"Despesa","Roupas","Pessoal","Roupas",acc.corrente,"Crédito",card.inter,"Pendente",false,150);
       if(idx===2){
         push(d(15),"Despesa","Farmácia","Saúde","Farmácia",acc.corrente,"Débito",null,"Pago",false,45);
         push(d(20),"Despesa","Anuidade cartão","Financeiro","Anuidade",acc.corrente,"Débito",card.nubank,"Pendente",true,35, {dueDate:d(25)});
@@ -463,6 +463,20 @@ const Store = {
     const nextYm = addMonths(ym+"-01",1).slice(0,7);
     const proximaFatura = abertas.filter(t=>ymKey(t.dueDate||t.date)===nextYm).reduce((a,t)=>a+Number(t.value||0),0);
     return { limite: Number(card.limit||0), utilizado, disponivel: Number(card.limit||0)-utilizado, faturaAtual, proximaFatura };
+  },
+
+  // Marks the current invoice's open charges as paid — this is what frees the
+  // credit limit back up (spending reduces available limit; paying the
+  // invoice restores it, exactly like a real card).
+  payCardInvoice(cardId, ym){
+    let count = 0;
+    this.state.transactions.forEach(t=>{
+      if(t.cardId===cardId && t.type==="Despesa" && t.status!=="Pago" && ymKey(t.dueDate||t.date)===ym){
+        t.status = "Pago"; count++;
+      }
+    });
+    if(count) this.persist();
+    return count;
   },
 
   installmentPurchases(){

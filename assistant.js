@@ -24,6 +24,34 @@ const Assistant = {
       input.style.height = Math.min(120, input.scrollHeight) + "px";
     });
     document.getElementById("assistantSend").addEventListener("click", ()=>this.handleSend());
+
+    document.getElementById("assistantAttach").addEventListener("click", ()=>document.getElementById("assistantPdfInput").click());
+    document.getElementById("assistantPdfInput").addEventListener("change", (e)=>this.handlePdfAttach(e));
+  },
+
+  async handlePdfAttach(e){
+    const file = e.target.files[0];
+    e.target.value = ""; // allow attaching the same file again later
+    if(!file) return;
+    Store.addChatMessage("user", `📎 ${file.name}`);
+    this.renderMessages();
+    this.renderMessages(null, true); // typing indicator while it parses
+    try{
+      const rows = await PdfImport.parseFile(file);
+      const included = rows.filter(r=>r.include).length;
+      if(rows.length === 0){
+        Store.addChatMessage("assistant", "Não encontrei linhas com data e valor nesse PDF. Pode ser um extrato escaneado (imagem) em vez de texto.");
+      } else {
+        Store.addChatMessage("assistant",
+          `Encontrei **${rows.length} lançamentos** nesse extrato — já pré-selecionei ${included} (deixei de fora o que parecia fatura de cartão ou transferência para você mesmo, e sugeri uma categoria para cada um). Abri a tela de revisão para você conferir e confirmar.`);
+      }
+      this.renderMessages();
+      if(rows.length) PdfImport.showReview(rows);
+    }catch(err){
+      console.error(err);
+      Store.addChatMessage("assistant", "Não consegui ler esse PDF — confira se ele não está protegido por senha ou é uma imagem escaneada.");
+      this.renderMessages();
+    }
   },
 
   open(){
@@ -123,7 +151,7 @@ const Assistant = {
              <button class="a-chip" data-q="como estão minhas metas?">🎯 Minhas metas</button>
              <button class="a-chip" data-q="previsão dos próximos meses">📆 Previsão</button>
            </div>
-           <p style="margin-top:14px; font-size:12px; color:var(--ink-faint);">Ou me conte um gasto: <i>"gastei 45 no mercado hoje"</i></p>
+           <p style="margin-top:14px; font-size:12px; color:var(--ink-faint);">Ou me conte um gasto: <i>"gastei 45 no mercado hoje"</i> — ou clique no 📎 para importar um extrato em PDF.</p>
          </div>`;
     if(showTyping){
       box.insertAdjacentHTML("beforeend", `<div class="msg assistant typing" id="typingBubble"><span></span><span></span><span></span></div>`);
@@ -207,12 +235,16 @@ const Assistant = {
     if(!description) description = category || (type==="Despesa" ? "Despesa" : "Receita");
     description = description.charAt(0).toUpperCase() + description.slice(1);
 
+    const paymentMethod = /cart[aã]o|cr[eé]dito/.test(lower) ? "Crédito" : "Débito";
     const payload = {
       type, description, value, date, dueDate: date,
       category: category || (type==="Despesa" ? "Pessoal" : (S.categories.receita[0]||"Outros")),
       subcategory, accountId: (S.accounts[0]||{}).id || null,
-      paymentMethod: /cart[aã]o|cr[eé]dito/.test(lower) ? "Crédito" : "Débito",
-      cardId: null, status: "Pago", fixed:false, notes:"", installments:1, installmentNum:1, groupId:null,
+      paymentMethod,
+      // compra no crédito só "some" do limite do cartão quando a fatura é paga —
+      // então nasce Pendente; qualquer outra forma de pagamento nasce Paga.
+      cardId: null, status: paymentMethod==="Crédito" ? "Pendente" : "Pago",
+      fixed:false, notes:"", installments:1, installmentNum:1, groupId:null,
     };
     if(payload.paymentMethod === "Crédito"){
       const cardHit = S.cards.find(c=>lower.includes(c.name.toLowerCase()));
@@ -444,7 +476,7 @@ const Assistant = {
     }
 
     // ---------- fallback ----------
-    return `Posso te ajudar com:\n\n• **Registrar gastos** — é só dizer: "gastei 60 no mercado"\n• **"como estou?"** — diagnóstico completo das suas finanças\n• **"onde estou gastando?"** — seus maiores gastos e onde cortar\n• **"quanto posso gastar?"** — saldo e limite diário\n• **"e minhas dívidas?"** — qual priorizar\n• **"como estão minhas metas?"** • **"previsão"** • **"cartões"** • **"saúde financeira"**\n\nPara conversar de forma totalmente livre, dá para ligar a IA completa em Configurações → Assistente com IA.`;
+    return `Posso te ajudar com:\n\n• **Registrar gastos** — é só dizer: "gastei 60 no mercado"\n• **📎 Importar extrato em PDF** — clique no clipe ao lado da caixa de texto\n• **"como estou?"** — diagnóstico completo das suas finanças\n• **"onde estou gastando?"** — seus maiores gastos e onde cortar\n• **"quanto posso gastar?"** — saldo e limite diário\n• **"e minhas dívidas?"** — qual priorizar\n• **"como estão minhas metas?"** • **"previsão"** • **"cartões"** • **"saúde financeira"**\n\nPara conversar de forma totalmente livre, dá para ligar a IA completa em Configurações → Assistente com IA.`;
   },
 
   // Full proactive read of the person's situation, with prioritised advice.

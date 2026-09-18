@@ -87,65 +87,26 @@ const SettingsView = {
 
       <div class="section-head"><h2>🤖 Assistente com IA</h2></div>
       <div class="card">
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">
-          O assistente (botão flutuante no canto da tela) já consegue registrar lançamentos por texto
-          (ex: "gastei 45 no mercado hoje") sem precisar de nada aqui. Para ele também responder dúvidas,
-          dar ideias e conversar sobre investimentos usando IA de verdade, cole abaixo uma chave de API da
-          Anthropic (console.anthropic.com). A chave fica salva <b>só no seu navegador</b> e as perguntas
-          vão direto do seu navegador para a Anthropic — nunca passam por nenhum outro servidor.
-        </p>
         <div class="field"><label>Chave da API (Anthropic)</label><input type="password" id="a_key" placeholder="sk-ant-..." value="${escapeHtml(S.assistant.apiKey)}"/></div>
         <div class="field" style="margin-top:12px;"><label>Modelo</label><input id="a_model" value="${escapeHtml(S.assistant.model)}"/></div>
         <div style="display:flex; gap:10px; margin-top:12px;">
           <button class="btn btn-primary btn-sm" id="saveAssistant">Salvar</button>
           <button class="btn btn-ghost btn-sm" id="clearChatBtn"><i data-lucide="eraser"></i>Limpar histórico de conversa</button>
         </div>
-        ${!S.assistant.apiKey ? `<p style="font-size:12px; color:var(--ink-faint); margin-top:12px;">Sem chave configurada, o assistente funciona em modo básico: registra lançamentos por texto e responde perguntas simples usando seus dados reais, mas sem a flexibilidade de uma IA completa.</p>` : ""}
       </div>
 
-      <div class="section-head"><h2>👥 Login e contas de usuário</h2></div>
-      <div class="card">
-        ${Store.cloud.enabled ? `
-          <p style="font-size:12.5px; color:var(--accent-strong); font-weight:600; margin-bottom:6px;">
-            <i data-lucide="check-circle" style="width:14px;height:14px;display:inline;vertical-align:-2px;"></i>
-            Login na nuvem ativo
-          </p>
-          <p style="font-size:12.5px; color:var(--ink-soft);">
-            Cada pessoa que abrir o link cria a própria conta e vê apenas os próprios dados, de qualquer
-            dispositivo. Seus dados são salvos automaticamente na nuvem a cada alteração.
-          </p>
-        ` : `
-          <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">
-            <b style="color:var(--ink)">O app está em modo local.</b> Não há tela de login porque os dados
-            ficam salvos só neste navegador — é o comportamento esperado enquanto a nuvem não estiver
-            configurada. A tela de criar conta <b style="color:var(--ink)">já está pronta no código</b>,
-            mas ela só aparece depois que você conectar um banco de dados (Supabase, gratuito).
-          </p>
-          <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">
-            São 4 passos (~5 min): criar o projeto no Supabase, rodar um SQL que já está pronto, copiar
-            2 chaves e colar no arquivo <code style="background:var(--surface-2); padding:2px 6px; border-radius:5px;">js/supabase-config.js</code>.
-            O passo a passo completo está no <b style="color:var(--ink)">README.md</b> do projeto, na seção
-            "Login multiusuário".
-          </p>
-          <button class="btn btn-secondary btn-sm" id="cloudSetupInfo"><i data-lucide="key-round"></i>Ver o passo a passo aqui</button>
-        `}
-      </div>
-
-      <div class="section-head"><h2>🏦 Conectar conta bancária</h2></div>
+      <div class="section-head"><h2>Relatórios e backup</h2></div>
       <div class="card">
         <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">
-          Puxar extratos automaticamente do seu banco (Open Finance) exige passar pela conexão de um
-          agregador financeiro autorizado pelo Banco Central — não é algo que dá pra simular sem essa peça.
-          Isso ainda não está conectado aqui. O caminho mais comum para um app assim é o
-          <a href="https://pluggy.ai" target="_blank" rel="noopener" style="color:var(--accent-strong); font-weight:600;">Pluggy</a>
-          (tem sandbox gratuito para testes). Enquanto isso, use a <b>Importação de extrato em PDF</b>
-          (na página Lançamentos) ou o assistente de IA para registrar gastos rapidamente.
+          <b style="color:var(--ink)">Relatório completo</b> — versão para ler ou imprimir: números, gráficos,
+          insights, orçamento, cartões, dívidas, investimentos e metas do mês selecionado no topo
+          (${MESES_PT[Number(Store.state.settings.selectedYm.split('-')[1])-1]} de ${Store.state.settings.selectedYm.split('-')[0]}), abrindo em uma nova aba pronta para "Salvar como PDF".
         </p>
-        <button class="btn btn-secondary btn-sm" id="bankConnectInfo"><i data-lucide="info"></i>Como isso funcionaria</button>
-      </div>
+        <button class="btn btn-primary" id="exportReport" style="margin-bottom:18px;"><i data-lucide="file-bar-chart"></i>Exportar relatório completo</button>
 
-      <div class="section-head"><h2>Backup dos meus dados</h2></div>
-      <div class="card">
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:6px 0 12px; padding-top:14px; border-top:1px solid var(--border);">
+          Dados crus, para backup ou para abrir em outro programa:
+        </p>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <button class="btn btn-secondary" id="exportJson"><i data-lucide="download"></i>Exportar dados (JSON)</button>
           <button class="btn btn-secondary" id="exportCsv"><i data-lucide="file-spreadsheet"></i>Exportar lançamentos (CSV)</button>
@@ -155,9 +116,9 @@ const SettingsView = {
           </label>
         </div>
         <p style="font-size:12px; color:var(--ink-faint); margin-top:12px;">
-          O backup é local: seus lançamentos ficam guardados no navegador indefinidamente (não há limite de
-          tempo — anos de histórico continuam disponíveis em Lançamentos, filtro "Todo o período"). Ainda
-          assim, exporte periodicamente para não perder nada ao trocar de navegador ou computador.
+          O backup é local: seus lançamentos ficam guardados indefinidamente (sem limite de tempo — anos
+          de histórico continuam disponíveis em Lançamentos, filtro "Todo o período"). Ainda assim, exporte
+          periodicamente para não perder nada ao trocar de navegador ou computador.
         </p>
       </div>
 
@@ -186,46 +147,6 @@ const SettingsView = {
     document.getElementById("logoutBtn")?.addEventListener("click", ()=>{
       UI.confirm("Você precisará entrar novamente com seu e-mail e senha.", ()=>Auth.logout(), {title:"Sair da conta", confirmLabel:"Sair", danger:false});
     });
-    document.getElementById("cloudSetupInfo")?.addEventListener("click", ()=>{
-      UI.openModal(`
-        <div class="modal-head"><h3>Ativar login de usuários</h3><button class="icon-btn" id="closeCloud"><i data-lucide="x"></i></button></div>
-        <div class="modal-body" style="font-size:13px; line-height:1.65; color:var(--ink-soft);">
-          <p><b style="color:var(--ink)">1.</b> Crie uma conta grátis em <b style="color:var(--ink)">supabase.com</b> e clique em "New Project".</p>
-          <p><b style="color:var(--ink)">2.</b> Vá em <b style="color:var(--ink)">SQL Editor → New query</b>, cole o código abaixo e execute:</p>
-          <pre style="background:var(--surface-2); padding:12px; border-radius:10px; font-size:11px; overflow-x:auto; white-space:pre; color:var(--ink);">create table if not exists public.app_state (
-  user_id uuid references auth.users(id) primary key,
-  data jsonb not null,
-  updated_at timestamptz default now()
-);
-alter table public.app_state enable row level security;
-create policy "select own" on public.app_state
-  for select using (auth.uid() = user_id);
-create policy "insert own" on public.app_state
-  for insert with check (auth.uid() = user_id);
-create policy "update own" on public.app_state
-  for update using (auth.uid() = user_id);</pre>
-          <p><b style="color:var(--ink)">3.</b> Em <b style="color:var(--ink)">Project Settings → API</b>, copie a "Project URL" e a chave "anon public".</p>
-          <p><b style="color:var(--ink)">4.</b> Abra o arquivo <b style="color:var(--ink)">js/supabase-config.js</b> e cole as duas:</p>
-          <pre style="background:var(--surface-2); padding:12px; border-radius:10px; font-size:11px; overflow-x:auto; color:var(--ink);">window.SUPABASE_URL = "https://SEUPROJETO.supabase.co";
-window.SUPABASE_ANON_KEY = "sua-chave-anon";</pre>
-          <p><b style="color:var(--ink)">5.</b> Em <b style="color:var(--ink)">Authentication → Providers → Email</b>, desmarque "Confirm email" (facilita o primeiro acesso).</p>
-          <p><b style="color:var(--ink)">6.</b> Publique de novo no Vercel. A tela de criar conta vai aparecer para todo mundo que abrir o link.</p>
-          <p style="margin-top:10px; color:var(--ink-faint); font-size:12px;">A chave "anon" pode ficar pública no site — sozinha ela não acessa nada, quem controla o acesso são as regras do passo 2.</p>
-        </div>
-      `, {size:"lg", onMount(root){ root.querySelector("#closeCloud").onclick = ()=>UI.closeModal(); }});
-    });
-    document.getElementById("bankConnectInfo").onclick = ()=>{
-      UI.openModal(`
-        <div class="modal-head"><h3>Conexão bancária — como funcionaria</h3><button class="icon-btn" id="closeBank"><i data-lucide="x"></i></button></div>
-        <div class="modal-body" style="font-size:13px; line-height:1.7; color:var(--ink-soft);">
-          <p><b style="color:var(--ink)">1.</b> Você cria uma conta grátis num agregador (ex: Pluggy) e pega uma chave de API.</p>
-          <p><b style="color:var(--ink)">2.</b> Uma função de servidor (o projeto já está pronto para hospedar isso em Vercel Functions) troca essa chave por um token de conexão.</p>
-          <p><b style="color:var(--ink)">3.</b> Você autoriza seu banco pelo widget do agregador (é ele que fala com o banco, o app nunca vê sua senha do banco).</p>
-          <p><b style="color:var(--ink)">4.</b> O agregador devolve os extratos, e o app converte cada um em um lançamento — do mesmo jeito que a importação de PDF já faz hoje.</p>
-          <p style="margin-top:10px;">Isso ainda não está plugado nesta versão porque depende da sua própria conta no agregador — não é algo que eu consiga criar por você.</p>
-        </div>
-      `, {onMount(root){ root.querySelector("#closeBank").onclick = ()=>UI.closeModal(); }});
-    };
     document.getElementById("saveRule").onclick = ()=>{
       Store.updateSettings({
         ruleNecessidades: (Number(document.getElementById("r_nec").value)||0)/100,
@@ -314,6 +235,9 @@ window.SUPABASE_ANON_KEY = "sua-chave-anon";</pre>
     };
 
     // ---- backup ----
+    document.getElementById("exportReport").onclick = ()=>{
+      Report.open(Store.state.settings.selectedYm);
+    };
     document.getElementById("exportJson").onclick = ()=>{
       const blob = new Blob([JSON.stringify(Store.state, null, 2)], {type:"application/json"});
       this.download(blob, `nortem-backup-${todayStr()}.json`);
