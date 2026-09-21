@@ -630,3 +630,26 @@ tbody tr:hover .row-actions{ opacity:1; }
 .a-chip:active{ transform: scale(.96); }
 /* assistant answers are longer now — give them room to breathe */
 .msg.assistant .msg-bubble{ max-width:94%; }
+
+/* ============================= NOTIFICATIONS PANEL ============================= */
+.notif-panel{
+  position:fixed; top:0; right:0; bottom:0; width:400px; max-width:100vw; z-index:99;
+  background:var(--surface); border-left:1px solid var(--border);
+  display:flex; flex-direction:column;
+  transform: translateX(100%); transition: transform .28s cubic-bezier(.2,.9,.3,1.1);
+  box-shadow: var(--shadow-lg);
+}
+.notif-panel.open{ transform: translateX(0); }
+.notif-body{ flex:1; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:22px; }
+.notif-section-title{ font-family:var(--font-display); font-size:13.5px; font-weight:700; margin-bottom:10px; }
+.notif-tip{
+  background:var(--surface-2); border-radius:12px; padding:12px 14px; margin-bottom:10px;
+}
+.notif-tip:last-child{ margin-bottom:0; }
+.notif-tip-tag{ display:inline-block; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; margin-bottom:7px; }
+.notif-tip p{ font-size:13px; line-height:1.55; margin:0; }
+.notif-foot{ text-align:center; font-size:11px; color:var(--ink-faint); }
+
+@media (max-width: 620px){
+  .notif-panel{ width:100%; }
+}

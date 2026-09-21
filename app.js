@@ -134,7 +134,7 @@ const App = {
   wireNewTx(){
     document.getElementById("newTxBtn").addEventListener("click", ()=>UI.openTransactionModal());
     document.getElementById("fabAdd").addEventListener("click", ()=>UI.openTransactionModal());
-    document.getElementById("alertsBtn").addEventListener("click", ()=>this.navigate("dashboard"));
+    document.getElementById("alertsBtn").addEventListener("click", ()=>Notifications.open());
   },
 };
 

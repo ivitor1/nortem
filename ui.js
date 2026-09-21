@@ -72,6 +72,29 @@ const UI = {
     }});
   },
 
+  // Pops up when a new expense pushes today's spending past the configured
+  // daily limit. Shown once per day (Store tracks the last alerted date),
+  // not on every single transaction after the first breach.
+  showDailyLimitPopup(check){
+    this.openModal(`
+      <div class="modal-body" style="text-align:center;">
+        <div class="confirm-icon"><i data-lucide="alert-octagon"></i></div>
+        <h3 style="font-family:var(--font-display); font-size:16px; margin-top:14px;">Limite diário ultrapassado</h3>
+        <p style="color:var(--ink-soft); font-size:13.5px; margin-top:8px;">
+          Você já gastou <b style="color:var(--ink)">${money(check.spent)}</b> hoje — acima do seu limite diário de ${money(check.limit)}.
+        </p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary btn-block" id="closeLimitPopup">Ver orçamentos</button>
+        <button class="btn btn-primary btn-block" id="okLimitPopup">Ok, entendi</button>
+      </div>
+    `, { size:"sm", onMount(root){
+      root.querySelector("#okLimitPopup").onclick = ()=>UI.closeModal();
+      root.querySelector("#closeLimitPopup").onclick = ()=>{ UI.closeModal(); App.navigate("budgets"); };
+    }});
+    document.querySelector(".modal").classList.add("confirm");
+  },
+
   // ------------------------------------------------------- theme toggle
   applyTheme(theme){
     document.documentElement.setAttribute("data-theme", theme);
@@ -139,7 +162,7 @@ const UI = {
         </div>
 
         <div class="field-row">
-          <div class="field">
+          <div class="field" id="accountWrap" style="${t.paymentMethod==='Crédito'?'display:none':''}">
             <label>Conta</label>
             <select id="f_account"><option value="">—</option>${S.accounts.map(a=>`<option value="${a.id}" ${a.id===t.accountId?"selected":""}>${escapeHtml(a.name)}</option>`).join("")}</select>
           </div>
@@ -152,6 +175,7 @@ const UI = {
         <div class="field" id="cardWrap" style="${t.paymentMethod==='Crédito'?'':'display:none'}">
           <label>Cartão</label>
           <select id="f_card"><option value="">Selecione</option>${S.cards.map(c=>`<option value="${c.id}" ${c.id===t.cardId?'selected':''}>${escapeHtml(c.name)}</option>`).join("")}</select>
+          <span class="hint">A compra só sai da sua conta quando você pagar a fatura, em Cartões.</span>
         </div>
 
         <div class="field-row">
@@ -213,6 +237,7 @@ const UI = {
         curPayment = e.target.value;
         const isCredit = curPayment === "Crédito";
         root.querySelector("#cardWrap").style.display = isCredit ? "" : "none";
+        root.querySelector("#accountWrap").style.display = isCredit ? "none" : "";
         root.querySelector("#installWrap").style.display = (isCredit && !isEdit) ? "" : "none";
         // A compra no cartão só "some" do limite quando a fatura é paga — então,
         // ao virar crédito numa compra NOVA, o status vira Pendente por padrão
@@ -246,8 +271,10 @@ const UI = {
         const date = root.querySelector("#f_date").value;
         const category = root.querySelector("#f_cat").value;
         const subcategory = root.querySelector("#f_sub") ? root.querySelector("#f_sub").value : "";
-        const accountId = root.querySelector("#f_account").value || null;
         const paymentMethod = root.querySelector("#f_payment").value;
+        // Uma compra no crédito nunca fica presa a uma conta bancária — o
+        // dinheiro só sai de uma conta quando a fatura é paga (em Cartões).
+        const accountId = paymentMethod==="Crédito" ? null : (root.querySelector("#f_account").value || null);
         const cardId = root.querySelector("#f_card") ? (root.querySelector("#f_card").value || null) : null;
         const status = root.querySelector("#f_status").value;
         const fixed = root.querySelector("#f_fixed").checked;
@@ -279,6 +306,14 @@ const UI = {
         }
         UI.closeModal();
         App.rerender();
+
+        if(payload.type==="Despesa" && payload.date===todayStr()){
+          const check = Store.todaySpendingCheck();
+          if(check.enabled && check.over && Store.state.settings.dailyLimitAlertedDate !== todayStr()){
+            Store.updateSettings({dailyLimitAlertedDate: todayStr()});
+            setTimeout(()=>UI.showDailyLimitPopup(check), 250); // let the success toast/close settle first
+          }
+        }
       };
     }});
   },

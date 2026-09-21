@@ -38,6 +38,24 @@ const SettingsView = {
         </div>
       </div>
 
+      <div class="section-head"><h2>🎯 Limite de gastos diário</h2></div>
+      <div class="card">
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">
+          Defina um teto de gastos por dia. Se você ultrapassar, um aviso aparece na hora e fica na
+          Central de notificações (🔔) até o fim do dia. Deixe em 0 para desativar.
+        </p>
+        <div class="field-row">
+          <div class="field"><label>Limite diário (R$)</label><input type="number" min="0" step="10" id="s_dailyLimit" value="${S.settings.dailyLimit||0}"/></div>
+          <div class="field">
+            <label>Hoje</label>
+            <div style="padding:11px 13px; border-radius:11px; background:var(--surface-2); font-size:13.5px; font-weight:600;">
+              ${(()=>{ const c=Store.todaySpendingCheck(); return c.enabled ? `${money(c.spent)} de ${money(c.limit)}` : "Desativado"; })()}
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="saveDailyLimit" style="margin-top:12px;">Salvar limite</button>
+      </div>
+
       <div class="section-head">
         <h2>Categorias e subcategorias</h2>
         <button class="btn btn-secondary btn-sm" id="addCatBtn"><i data-lucide="plus"></i>Nova categoria</button>
@@ -87,10 +105,8 @@ const SettingsView = {
 
       <div class="section-head"><h2>🤖 Assistente com IA</h2></div>
       <div class="card">
-        <div class="field"><label>Chave da API (Anthropic)</label><input type="password" id="a_key" placeholder="sk-ant-..." value="${escapeHtml(S.assistant.apiKey)}"/></div>
-        <div class="field" style="margin-top:12px;"><label>Modelo</label><input id="a_model" value="${escapeHtml(S.assistant.model)}"/></div>
-        <div style="display:flex; gap:10px; margin-top:12px;">
-          <button class="btn btn-primary btn-sm" id="saveAssistant">Salvar</button>
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <p style="font-size:12.5px; color:var(--ink-soft); margin:0;">Funciona automaticamente para quem usar o app — nada para configurar aqui.</p>
           <button class="btn btn-ghost btn-sm" id="clearChatBtn"><i data-lucide="eraser"></i>Limpar histórico de conversa</button>
         </div>
       </div>
@@ -154,6 +170,11 @@ const SettingsView = {
         ruleInvestimentos: (Number(document.getElementById("r_inv").value)||0)/100,
       });
       UI.toast("Regra 50/30/20 atualizada.");
+    };
+    document.getElementById("saveDailyLimit").onclick = ()=>{
+      Store.setDailyLimit(document.getElementById("s_dailyLimit").value);
+      UI.toast("Limite diário atualizado.");
+      App.rerender();
     };
 
     // ---- category manager ----
@@ -221,13 +242,6 @@ const SettingsView = {
     });
 
     // ---- assistant ----
-    document.getElementById("saveAssistant").onclick = ()=>{
-      Store.setAssistantSettings({
-        apiKey: document.getElementById("a_key").value.trim(),
-        model: document.getElementById("a_model").value.trim() || "claude-haiku-4-5-20251001",
-      });
-      UI.toast("Configurações do assistente salvas."); App.rerender();
-    };
     document.getElementById("clearChatBtn").onclick = ()=>{
       UI.confirm("O histórico de conversa com o assistente será apagado.", ()=>{
         Store.clearChat(); UI.toast("Conversa apagada.");

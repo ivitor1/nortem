@@ -58,7 +58,7 @@ const Store = {
   normalize(data){
     const blank = {
       profile:{name:"Você"},
-      settings:{theme:"light", ruleNecessidades:0.5, ruleDesejos:0.3, ruleInvestimentos:0.2, demo:false, selectedYm: ymKey(todayStr())},
+      settings:{theme:"light", ruleNecessidades:0.5, ruleDesejos:0.3, ruleInvestimentos:0.2, demo:false, selectedYm: ymKey(todayStr()), dailyLimit:0, dailyLimitAlertedDate:""},
       accounts:[], cards:[], categoryGroups:this.defaultCategoryGroups(), budgets:this.defaultBudgets(),
       categories:this.defaultCategories(),
       transactions:[], debts:[], investments:[], goals:[],
@@ -192,7 +192,7 @@ const Store = {
 
     return {
       profile: { name: "Vitor" },
-      settings: { theme:"light", ruleNecessidades:0.5, ruleDesejos:0.3, ruleInvestimentos:0.2, demo:true, selectedYm: "2026-09" },
+      settings: { theme:"light", ruleNecessidades:0.5, ruleDesejos:0.3, ruleInvestimentos:0.2, demo:true, selectedYm: "2026-09", dailyLimit:150, dailyLimitAlertedDate:"" },
       accounts, cards,
       categoryGroups: this.defaultCategoryGroups(),
       budgets: this.defaultBudgets(),
@@ -206,7 +206,7 @@ const Store = {
   resetToBlank(){
     this.state = {
       profile: { name: this.state.profile.name || "Você" },
-      settings: { theme: this.state.settings.theme, ruleNecessidades:0.5, ruleDesejos:0.3, ruleInvestimentos:0.2, demo:false, selectedYm: ymKey(todayStr()) },
+      settings: { theme: this.state.settings.theme, ruleNecessidades:0.5, ruleDesejos:0.3, ruleInvestimentos:0.2, demo:false, selectedYm: ymKey(todayStr()), dailyLimit:0, dailyLimitAlertedDate:"" },
       accounts: [], cards: [],
       categoryGroups: this.defaultCategoryGroups(),
       budgets: this.defaultBudgets(),
@@ -443,7 +443,11 @@ const Store = {
   accountBalance(accountId){
     const acc = this.state.accounts.find(a=>a.id===accountId);
     if(!acc) return 0;
-    const txs = this.state.transactions.filter(t=>t.accountId===accountId);
+    // Only SETTLED ("Pago") movements actually change how much money sits in
+    // the account — a pending bill you haven't paid yet, or a credit-card
+    // purchase (which never carries an accountId until its invoice is paid),
+    // must not move this number before the money has actually moved.
+    const txs = this.state.transactions.filter(t=>t.accountId===accountId && t.status==="Pago");
     const receitas = txs.filter(t=>t.type==="Receita").reduce((a,t)=>a+Number(t.value||0),0);
     const despesas = txs.filter(t=>t.type==="Despesa").reduce((a,t)=>a+Number(t.value||0),0);
     return Number(acc.initialBalance||0) + receitas - despesas;
@@ -467,12 +471,16 @@ const Store = {
 
   // Marks the current invoice's open charges as paid — this is what frees the
   // credit limit back up (spending reduces available limit; paying the
-  // invoice restores it, exactly like a real card).
-  payCardInvoice(cardId, ym){
+  // invoice restores it, exactly like a real card). Reassigning accountId
+  // here is what makes the money actually "leave" that account's balance
+  // at the moment of payment, not back when the purchase itself happened.
+  payCardInvoice(cardId, ym, accountId){
     let count = 0;
     this.state.transactions.forEach(t=>{
       if(t.cardId===cardId && t.type==="Despesa" && t.status!=="Pago" && ymKey(t.dueDate||t.date)===ym){
-        t.status = "Pago"; count++;
+        t.status = "Pago";
+        if(accountId) t.accountId = accountId;
+        count++;
       }
     });
     if(count) this.persist();
@@ -619,8 +627,28 @@ const Store = {
     return out.slice(0,5);
   },
 
+  // ---- daily spending limit ----
+  todaySpendingCheck(){
+    const limit = Number(this.state.settings.dailyLimit||0);
+    if(!limit) return { enabled:false, limit:0, spent:0, over:false, remaining:0 };
+    const today = todayStr();
+    const spent = this.state.transactions
+      .filter(t=>t.type==="Despesa" && t.date===today)
+      .reduce((a,t)=>a+Number(t.value||0),0);
+    return { enabled:true, limit, spent, over: spent>limit, remaining: Math.max(0,limit-spent) };
+  },
+  setDailyLimit(value){
+    this.state.settings.dailyLimit = Math.max(0, Number(value)||0);
+    this.state.settings.dailyLimitAlertedDate = ""; // let a new limit re-check today fresh
+    this.persist();
+  },
+
   alerts(ym){
     const out = [];
+    const daily = this.todaySpendingCheck();
+    if(daily.enabled && daily.over){
+      out.push({tone:"danger", icon:"alert-octagon", text:`Você ultrapassou seu limite diário de gastos: ${money(daily.spent)} de ${money(daily.limit)} gastos hoje.`});
+    }
     this.state.cards.forEach(card=>{
       const u = this.cardUtilization(card.id, ym);
       if(u.faturaAtual>0){

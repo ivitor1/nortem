@@ -2,6 +2,14 @@
 
 **Novidades desta versão:** saudação conforme o horário do dia, nova identidade visual (logo + marca), assistente muito mais inteligente (dá orientação priorizada com base nos seus números reais, não só consulta dados), e explicação clara em Configurações sobre como ativar o login de usuários.
 
+**Nesta versão:** assistente com IA agora funciona automaticamente para qualquer pessoa que usar o app (via função de servidor + chave gratuita configurada uma única vez por quem publica); botão de notificações funcional (alertas reais + dicas diárias de economia/renda extra/insights); limite de gastos diário com pop-up de aviso quando ultrapassado.
+
+**Nesta versão:** corrigida uma falha conceitual real no "Saldo" do Dashboard — ele estava somando gastos no cartão de crédito junto com o saldo da conta bancária. Agora "Saldo em contas" mostra só o dinheiro que realmente está nas suas contas, e só diminui quando você de fato paga a fatura (em Cartões, informando de qual conta o valor sai).
+
+**Nesta versão:** importação de PDF reescrita para reconhecer extratos reais (datas por extenso, colunas de débito/crédito/saldo, categorização automática, detecção de movimentação interna) — testada contra um extrato real da Revolut; importação de PDF agora também disponível direto pelo assistente (📎); textos explicativos removidos de Configurações (login e conexão bancária já resolvidos, assistente simplificado).
+
+**Nesta versão:** corrigido o bug do limite do cartão de crédito (uma compra no crédito agora reduz o limite disponível de verdade, e "Pagar fatura" o libera de volta), e novo "Relatório completo" com gráficos/insights/números — não só a lista de lançamentos.
+
 Aplicação web de finanças pessoais em HTML + CSS + JavaScript puro (sem
 framework, sem build step), com gráficos via Chart.js, ícones via Lucide,
 leitura de PDF via pdf.js e, opcionalmente, login multiusuário + sincronização
@@ -16,16 +24,20 @@ com dados isolados, acessíveis de qualquer aparelho.
 
 ```
 /index.html               → shell da aplicação + tela de login (quando ativada)
+/api/assistant.js          → função de servidor: fala com a IA usando uma chave guardada
+                              no Vercel, nunca exposta no navegador (veja "Assistente com IA")
 /css/styles.css            → design system (tokens, componentes, dark mode, responsivo)
 /js/supabase-config.js     → suas credenciais do Supabase (vazio = modo local)
 /js/utils.js               → formatação de moeda/data, helpers
 /js/store.js               → modelo de dados: local (localStorage) ou nuvem (Supabase),
                               cálculos (totais, orçamento, cartões, dívidas, investimentos,
-                              metas, saúde financeira, insights, previsão)
+                              metas, saúde financeira, insights, previsão, limite diário)
 /js/auth.js                → tela de login/cadastro e sessão (só ativo em modo nuvem)
-/js/ui.js                  → toasts, modais, modal de "Novo lançamento"
+/js/ui.js                  → toasts, modais, modal de "Novo lançamento", pop-up de limite diário
 /js/charts.js               → wrappers do Chart.js usados pelas páginas
+/js/report.js               → relatório completo (números, gráficos, insights) para imprimir/PDF
 /js/pdf-import.js          → leitura de extrato em PDF + tela de revisão antes de importar
+/js/notifications.js       → painel do sino: alertas reais + dicas diárias
 /js/assistant.js            → assistente com IA (registra lançamentos por texto + chat)
 /js/views/*.js              → uma página por arquivo (Dashboard, Lançamentos, Orçamentos,
                               Cartões, Contas, Dívidas, Investimentos, Metas, Previsão, Configurações)
@@ -94,12 +106,26 @@ próximo passo seria separar em tabelas relacionais — mas não é necessário 
 
 ## 📄 Importar extrato em PDF
 
-Em **Lançamentos → Importar extrato (PDF)**. Funciona melhor com extratos que
-têm texto selecionável (não fotos/scans). O app lê o PDF inteiro, tenta achar
-linhas com data + valor, e sempre abre uma **tela de revisão editável** antes
-de importar qualquer coisa — o layout muda muito de banco para banco, então
-a leitura automática é uma sugestão, não uma verdade absoluta. Confira
-tipo/categoria/valor de cada linha antes de confirmar.
+Em **Lançamentos → Importar extrato (PDF)** ou direto pelo **assistente**
+(clique no 📎 ao lado da caixa de texto do chat). Funciona melhor com
+extratos que têm texto selecionável (não fotos/scans).
+
+O leitor reconhece:
+- Datas numéricas (`17/09/2026`) e por extenso (`17 de set. de 2026`)
+- Colunas separadas de débito/crédito/saldo (não só um valor com sinal)
+- Descrições que quebram em duas linhas (ex: nome de quem pagou)
+- Categoria sugerida automaticamente por palavra-chave (mercado, farmácia,
+  posto de combustível, streaming, etc. — o que não reconhece cai em
+  "Pessoal/Outros", editável na revisão)
+- Movimentações internas (pagamento da própria fatura do cartão, transferência
+  para reservas, transferência para você mesmo) — essas já vêm **desmarcadas**
+  por padrão, para não inflar seus gastos/receitas reais, mas continuam
+  visíveis caso você queira incluir mesmo assim
+
+Testado com um extrato real da Revolut (176 lançamentos em 11 páginas,
+verificados um a um contra o PDF original). O layout muda de banco para
+banco, então isso continua sendo uma sugestão — sempre abre a **tela de
+revisão** antes de importar qualquer coisa.
 
 ## 🏦 Conectar direto com o banco (Open Finance)
 
@@ -112,16 +138,55 @@ bancária" tem um resumo de como isso funcionaria e o que falta. Enquanto
 isso, a importação de PDF acima e o assistente por texto cobrem a maior parte
 do uso do dia a dia.
 
-## 🤖 Assistente com IA
+## 🤖 Assistente com IA — funciona sozinho para qualquer pessoa
 
-Botão flutuante ✨ em qualquer página.
-- **Sem configurar nada**: já registra lançamentos ditos em texto livre
-  ("gastei 45 no mercado hoje") e responde perguntas simples usando seus
-  dados reais (saldo, orçamento, dívidas, etc.) — tudo local, sem internet.
-- **Com sua própria chave da Anthropic** (Configurações → Assistente com IA):
-  conversa livre sobre dúvidas, ideias e investimentos. As perguntas vão
-  direto do seu navegador para a Anthropic — nunca passam por mim ou por
-  qualquer servidor meu.
+Diferente da versão anterior, ninguém que usar o app precisa colar chave nenhuma.
+Isso é feito com uma função de servidor (`api/assistant.js`, roda automaticamente
+no Vercel) que guarda a chave de forma segura e nunca a expõe no navegador.
+
+**Sem configurar nada:** o assistente já registra lançamentos por texto
+("gastei 45 no mercado hoje") e responde perguntas usando seus dados reais —
+tudo local, sem precisar de IA nenhuma.
+
+**Para conversa livre com IA de verdade (uma vez só, e vale para todo mundo
+que usar o app depois):**
+
+1. Escolha um provedor gratuito e pegue uma chave — recomendo o Google:
+   - **Gemini** (recomendado, grátis, sem cartão de crédito): https://aistudio.google.com/apikey
+   - **Groq** (também grátis): https://console.groq.com/keys
+   - Anthropic/Claude também funciona, mas é pago: https://console.anthropic.com
+2. No painel do **Vercel**, abra o projeto → **Settings → Environment Variables**
+3. Adicione uma variável com o nome exato de uma destas (só uma é necessária):
+   `GEMINI_API_KEY`, `GROQ_API_KEY` ou `ANTHROPIC_API_KEY` — cole a chave como valor
+4. Clique em **Redeploy** (ou publique de novo)
+
+Pronto — a partir daí, toda pessoa que abrir o app tem o assistente completo
+funcionando automaticamente. Ninguém mais precisa configurar nada, nem saber
+que isso existe. Se a variável não estiver configurada, o assistente
+simplesmente continua no modo básico (sem quebrar nada).
+
+## 🔔 Central de notificações
+
+Clique no sino no topo — abre um painel com:
+- **Alertas reais**, calculados a partir dos seus dados (fatura de cartão perto
+  do vencimento, orçamento estourado, limite diário ultrapassado, meta batida)
+- **Dicas do dia**: uma de redução de gastos, uma de renda extra e um insight
+  sobre sua vida financeira (usa um dado real seu quando disponível). O
+  conteúdo muda uma vez por dia.
+
+Importante: isso é um painel **dentro do app** — ele aparece quando alguém
+abre o app com o navegador ativo, não é uma notificação push do sistema
+operacional (aquelas que aparecem mesmo com o app fechado). Implementar push
+de verdade exigiria um Service Worker + um servidor de push próprio; dá para
+construir depois se fizer sentido.
+
+## 🎯 Limite de gastos diário
+
+Em **Configurações → Limite de gastos diário**, defina um teto (ou deixe 0
+para desativar). Sempre que uma despesa datada de hoje empurrar o total do
+dia para além do limite, um **pop-up** aparece na hora avisando — só uma vez
+por dia (não a cada lançamento depois disso), e o alerta também fica na
+Central de notificações até virar o dia.
 
 ## Backup dos dados
 

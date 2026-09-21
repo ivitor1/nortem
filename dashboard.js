@@ -7,6 +7,7 @@ const DashboardView = {
     const S = Store.state;
     const ym = S.settings.selectedYm;
     const t = Store.totalsForMonth(ym);
+    const accountsBalance = Store.accountsTotal();
     const prevYm = addMonths(ym+"-01",-1).slice(0,7);
     const prevT = Store.totalsForMonth(prevYm);
     const deltaReceita = prevT.receita>0 ? (t.receita-prevT.receita)/prevT.receita : null;
@@ -30,9 +31,9 @@ const DashboardView = {
 
       <div class="kpi-grid" style="margin-top:20px;">
         <div class="kpi-card hero">
-          <div class="kpi-top"><span class="kpi-label">💵 Saldo disponível</span></div>
-          <div class="kpi-value num">${money(t.saldo)}</div>
-          <div class="kpi-delta">${pct(t.pctRenda)} da renda comprometida</div>
+          <div class="kpi-top"><span class="kpi-label">💵 Saldo em contas</span></div>
+          <div class="kpi-value num">${money(accountsBalance)}</div>
+          <div class="kpi-delta">${t.saldo>=0?'+':'−'}${money(Math.abs(t.saldo))} de economia este mês</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-top"><span class="kpi-label">💰 Receita</span><span class="kpi-icon tint-green"><i data-lucide="arrow-down-left"></i></span></div>

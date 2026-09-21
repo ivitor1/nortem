@@ -88,14 +88,43 @@ const CardsView = {
         }, {title:"Remover cartão"});
       };
       el.querySelector(".btn-pay-invoice")?.addEventListener("click", ()=>{
-        const u = Store.cardUtilization(id, ym);
-        UI.confirm(`Isso marca ${money(u.faturaAtual)} em lançamentos como pagos e libera esse valor no limite do cartão.`, ()=>{
-          const n = Store.payCardInvoice(id, ym);
-          UI.toast(`Fatura paga — ${n} lançamento(s) atualizados, limite liberado.`);
-          App.rerender();
-        }, {title:"Pagar fatura", confirmLabel:"Pagar", danger:false});
+        this.openPayInvoiceModal(id, ym);
       });
     });
+  },
+
+  openPayInvoiceModal(cardId, ym){
+    const S = Store.state;
+    const u = Store.cardUtilization(cardId, ym);
+    if(S.accounts.length === 0){
+      UI.confirm(`Isso marca ${money(u.faturaAtual)} em lançamentos como pagos e libera esse valor no limite do cartão. Como você ainda não tem contas cadastradas, não dá para descontar de nenhuma — cadastre uma conta em Contas se quiser que o saldo reflita esse pagamento.`, ()=>{
+        const n = Store.payCardInvoice(cardId, ym);
+        UI.toast(`Fatura paga — ${n} lançamento(s) atualizados, limite liberado.`);
+        App.rerender();
+      }, {title:"Pagar fatura", confirmLabel:"Pagar mesmo assim", danger:false});
+      return;
+    }
+    UI.openModal(`
+      <div class="modal-head"><h3>Pagar fatura</h3><button class="icon-btn" id="closePay"><i data-lucide="x"></i></button></div>
+      <div class="modal-body">
+        <p style="font-size:13px; color:var(--ink-soft);">${money(u.faturaAtual)} serão marcados como pagos e o limite do cartão será liberado. De qual conta esse valor vai sair?</p>
+        <div class="field"><label>Conta</label><select id="p_account">${S.accounts.map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join("")}</select></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary btn-block" id="cancelPay">Cancelar</button>
+        <button class="btn btn-primary btn-block" id="confirmPay">Pagar</button>
+      </div>
+    `, { onMount(root){
+      root.querySelector("#closePay").onclick = ()=>UI.closeModal();
+      root.querySelector("#cancelPay").onclick = ()=>UI.closeModal();
+      root.querySelector("#confirmPay").onclick = ()=>{
+        const accountId = root.querySelector("#p_account").value;
+        const n = Store.payCardInvoice(cardId, ym, accountId);
+        UI.closeModal();
+        UI.toast(`Fatura paga — ${n} lançamento(s) atualizados, limite liberado e saldo da conta descontado.`);
+        App.rerender();
+      };
+    }});
   },
 
   openCardModal(existing=null){
