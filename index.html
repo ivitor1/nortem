@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Nortem — Controle Financeiro</title>
 <meta name="description" content="Sua vida financeira, organizada." />
+
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230FA678'/%3E%3Cpath d='M7 24V8.8c0-.9 1.1-1.3 1.7-.6l11.6 13c.6.7 1.7.3 1.7-.6V8' stroke='white' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3Cpath d='M19.4 8H25v5.6' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E" />
 
 <!-- Fonts -->
@@ -27,7 +28,7 @@
 <script>
   // Avoids a flash of the app shell before the login screen is ready,
   // when cloud mode is on.
-  if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY){
+  if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
     document.write('<style>#app{display:none}</style>');
   }
 </script>
@@ -37,26 +38,36 @@
 
 <!-- Main stylesheet -->
 <link rel="stylesheet" href="styles.css" />
+
 </head>
 
 <body>
 
-<!-- ============ AUTH SCREEN (only shown when cloud sync is configured) ============ -->
+<!-- ============ AUTH SCREEN ============ -->
 <div class="auth-screen" id="authScreen" hidden>
   <div class="auth-card">
 
     <div class="brand" style="justify-content:center; padding-bottom:8px;">
       <span class="brand-mark">
-        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M7 24V8.8c0-.9 1.1-1.3 1.7-.6l11.6 13c.6.7 1.7.3 1.7-.6V8"
-            stroke="currentColor"
-            stroke-width="3.4"
-            stroke-linecap="round"/>
-          <path d="M19.4 8H25v5.6"
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <path
+            d="M7 24V8.8c0-.9 1.1-1.3 1.7-.6l11.6 13c.6.7 1.7.3 1.7-.6V8"
             stroke="currentColor"
             stroke-width="3.4"
             stroke-linecap="round"
-            stroke-linejoin="round"/>
+          />
+          <path
+            d="M19.4 8H25v5.6"
+            stroke="currentColor"
+            stroke-width="3.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
         </svg>
       </span>
 
@@ -120,6 +131,7 @@
   </div>
 </div>
 
+
 <!-- ============ APP SHELL ============ -->
 <div class="app" id="app">
 
@@ -155,6 +167,7 @@
       <span class="brand-name">Nortem</span>
 
     </div>
+
 
     <nav class="nav" id="mainNav">
 
@@ -210,12 +223,14 @@
 
     </nav>
 
+
     <button class="theme-toggle" id="themeToggle">
       <i data-lucide="moon"></i>
       <span>Modo escuro</span>
     </button>
 
   </aside>
+
 
   <!-- Main -->
   <main class="main">
@@ -252,9 +267,11 @@
 
     </header>
 
+
     <div class="view-container" id="view"></div>
 
   </main>
+
 
   <!-- Mobile bottom nav -->
   <nav class="bottom-nav" id="bottomNav">
@@ -286,11 +303,13 @@
 
   </nav>
 
+
   <button class="bn-fab" id="fabAdd">
     <i data-lucide="plus"></i>
   </button>
 
 </div>
+
 
 <!-- Mobile "mais" sheet -->
 <div class="sheet-backdrop" id="moreBackdrop" hidden>
@@ -333,10 +352,12 @@
 
 </div>
 
+
 <!-- Overlay root for modals -->
 <div id="modalRoot"></div>
 
-<!-- AI Assistant: floating button + slide-over panel -->
+
+<!-- AI Assistant -->
 <button
   class="assistant-fab"
   id="assistantFab"
@@ -345,11 +366,13 @@
   <i data-lucide="sparkles"></i>
 </button>
 
+
 <div
   class="assistant-backdrop"
   id="assistantBackdrop"
   hidden
 ></div>
+
 
 <aside
   class="assistant-panel"
@@ -367,23 +390,33 @@
 
       <div>
         <b>Assistente Nortem</b>
-        <span class="assistant-mode" id="assistantModeTag">
+
+        <span
+          class="assistant-mode"
+          id="assistantModeTag"
+        >
           modo básico
         </span>
       </div>
 
     </div>
 
-    <button class="icon-btn" id="closeAssistant">
+
+    <button
+      class="icon-btn"
+      id="closeAssistant"
+    >
       <i data-lucide="x"></i>
     </button>
 
   </div>
 
+
   <div
     class="assistant-messages"
     id="assistantMessages"
   ></div>
+
 
   <div class="assistant-inputbar">
 
@@ -395,6 +428,7 @@
       <i data-lucide="paperclip"></i>
     </button>
 
+
     <input
       type="file"
       id="assistantPdfInput"
@@ -402,11 +436,13 @@
       style="display:none;"
     />
 
+
     <textarea
       id="assistantInput"
       rows="1"
       placeholder="Pergunte algo ou diga um gasto: &quot;gastei 45 no mercado hoje&quot;"
     ></textarea>
+
 
     <button
       class="icon-btn assistant-send"
@@ -419,11 +455,63 @@
 
 </aside>
 
+
+<!-- Notifications -->
+<div
+  class="assistant-backdrop"
+  id="notifBackdrop"
+  hidden
+></div>
+
+
+<aside
+  class="notif-panel"
+  id="notifPanel"
+  hidden
+>
+
+  <div class="assistant-head">
+
+    <div class="assistant-head-title">
+
+      <div
+        class="assistant-avatar"
+        style="background:linear-gradient(145deg,var(--gold),#8A6414);"
+      >
+        <i data-lucide="bell"></i>
+      </div>
+
+      <div>
+        <b>Notificações</b>
+      </div>
+
+    </div>
+
+
+    <button
+      class="icon-btn"
+      id="closeNotif"
+    >
+      <i data-lucide="x"></i>
+    </button>
+
+  </div>
+
+
+  <div
+    class="notif-body"
+    id="notifBody"
+  ></div>
+
+</aside>
+
+
 <!-- Toast root -->
 <div
   id="toastRoot"
   class="toast-root"
 ></div>
+
 
 <!-- ============ SCRIPTS ============ -->
 
@@ -433,10 +521,15 @@
 <script src="auth.js"></script>
 <script src="ui.js"></script>
 
-<!-- Charts / Reports / Imports / Assistant -->
+<!-- Charts / Reports / Imports -->
 <script src="charts.js"></script>
 <script src="report.js"></script>
 <script src="pdf-import.js"></script>
+
+<!-- Notifications -->
+<script src="notifications.js"></script>
+
+<!-- Assistant -->
 <script src="assistant.js"></script>
 
 <!-- Views -->
@@ -456,4 +549,3 @@
 
 </body>
 </html>
-```
